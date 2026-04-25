@@ -10,6 +10,7 @@ export const EnrichSchema = CatSchema.pick({
     unique_details: true,
     age_group: true,
     collar: true,
+    size: true,
 })
 const EnrichJSONSchema = JSON.stringify(z.toJSONSchema(EnrichSchema), null, 2);
 
