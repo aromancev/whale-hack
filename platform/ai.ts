@@ -25,8 +25,6 @@ export type AnthropicAiOptions = {
 const defaultAnthropicModel = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5-20250929";
 const defaultMaxTokens = 1024;
 
-export const aiCapabilities: AiCapabilities = createAnthropicAiCapabilities();
-
 export function createAnthropicAiCapabilities(
   options: AnthropicAiOptions = {},
 ): AiCapabilities {
