@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ColorSchema = z.literal("");
+export const ColorSchema = z.string();
 export const SizeSchema = z.enum(["small", "medium", "large"]);
 
 export const PetSchema = z.object({
