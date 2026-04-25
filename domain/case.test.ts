@@ -55,6 +55,15 @@ describe("petCaseRepository", () => {
     expect(CaseSchema.parse(petCase)).toEqual(petCase);
     expect(CaseSchema.safeParse({ ...petCase, lost_time: "not-a-date" }).success).toBe(false);
   });
+
+  it("generates a default id when one is not provided", () => {
+    const petCaseWithoutId: Partial<Case> = createCase("case-1");
+    delete petCaseWithoutId.id;
+
+    expect(CaseSchema.parse(petCaseWithoutId).id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+  });
 });
 
 function createTestRepository() {
@@ -67,6 +76,7 @@ function createTestRepository() {
 function createCase(id: string, overrides: Partial<Case> = {}): Case {
   return {
     id,
+    status: "created",
     owner: {
       name: "Ada Lovelace",
       email: "ada@example.com",

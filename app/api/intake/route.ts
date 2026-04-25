@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const result = CaseSchema.safeParse(withGeneratedId(body));
+  const result = CaseSchema.safeParse(body);
 
   if (!result.success) {
     const issues = result.error.issues.map((issue) => ({
@@ -29,14 +29,6 @@ export async function POST(request: Request) {
   const petCase = await petCaseRepository.save(result.data);
 
   return Response.json({ id: petCase.id });
-}
-
-function withGeneratedId(body: unknown) {
-  if (!body || typeof body !== "object" || Array.isArray(body) || "id" in body) {
-    return body;
-  }
-
-  return { ...body, id: crypto.randomUUID() };
 }
 
 function formatValidationError(issues: { path: string; message: string }[]) {

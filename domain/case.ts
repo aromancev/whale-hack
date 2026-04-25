@@ -6,6 +6,7 @@ import { OwnerSchema } from "./owner";
 import { PetSchema } from "./pets";
 
 const isoDateTimeStringSchema = z.iso.datetime().transform((value) => value as ISODateTimeString);
+const caseStatusSchema = z.enum(["created", "open", "closed"]);
 
 export const AddressSchema = z.object({
   country: z.string(),
@@ -31,7 +32,8 @@ export const SightingSchema = z.object({
 });
 
 export const CaseSchema = z.object({
-  id: z.string(),
+  id: z.string().default(() => crypto.randomUUID()),
+  status: caseStatusSchema.default("created"),
   owner: OwnerSchema,
   pet: PetSchema.optional(),
   lost_time: isoDateTimeStringSchema.optional(),
