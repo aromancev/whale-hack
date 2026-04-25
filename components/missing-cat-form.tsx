@@ -10,11 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  MapPin,
   PawPrint,
   ShieldCheck,
   Sparkles,
-  TriangleAlert,
   User,
 } from "lucide-react";
 
@@ -49,10 +47,12 @@ type Step = {
   icon: typeof Cat;
 };
 
+type FieldErrorKey = "owner.name" | "owner.email" | "pet.name" | "pet.gender" | "lostDate" | "lost_place.city";
+
 const steps: Step[] = [
   {
     title: "Start here",
-    description: "Quick, calm, useful.",
+    description: "Every detail brings them closer.",
     icon: Cat,
   },
   {
@@ -106,21 +106,36 @@ const sizeOptions: Size[] = ["small", "medium", "large"];
 const genderOptions: Pet["gender"][] = ["female", "male"];
 const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
 const yesNoOptions = ["Yes", "No"];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const progressLabels = [
+  "Missing cat",
+  "Contact added",
+  "Cat basics added",
+  "Last seen added",
+  "Photos added",
+  "Appearance added",
+  "Health info added",
+  "ID details added",
+  "Reward added",
+  "Almost found your cat",
+];
 
 export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const [petCase, setPetCase] = useState<Case>(() => initialCase ?? createEmptyCase());
   const [currentStep, setCurrentStep] = useState(() => initialCase ? 2 : 0);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const progress = useMemo(
-    () => Math.round(((currentStep + 1) / steps.length) * 100),
+    () => Math.round((currentStep / (steps.length - 1)) * 100),
     [currentStep]
   );
 
   const step = steps[currentStep];
   const Icon = step.icon;
+  const progressLabel = progressLabels[currentStep] ?? "Almost found your cat";
 
   const pet = petCase.pet ?? createEmptyPet();
   const lostPlace = petCase.lost_place ?? createEmptyAddress();
@@ -136,12 +151,23 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     setError("");
   }
 
+  function clearFieldError(key: FieldErrorKey) {
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
+
   function updateOwner<Key extends keyof Owner>(key: Key, value: Owner[Key]) {
     setPetCase((current) => ({
       ...current,
       updated_at: createTimestamp(),
       owner: { ...current.owner, [key]: value },
     }));
+    if (key === "name" || key === "email") {
+      clearFieldError(`owner.${key}`);
+    }
     setError("");
   }
 
@@ -151,6 +177,9 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       updated_at: createTimestamp(),
       pet: { ...(current.pet ?? createEmptyPet()), [key]: value },
     }));
+    if (key === "name" || key === "gender") {
+      clearFieldError(`pet.${key}`);
+    }
     setError("");
   }
 
@@ -160,6 +189,9 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       updated_at: createTimestamp(),
       lost_place: { ...(current.lost_place ?? createEmptyAddress()), [key]: value },
     }));
+    if (key === "city") {
+      clearFieldError("lost_place.city");
+    }
     setError("");
   }
 
@@ -169,6 +201,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       updated_at: createTimestamp(),
       lost_time: createLostTime(value, lostTime),
     }));
+    clearFieldError("lostDate");
     setError("");
   }
 
@@ -182,43 +215,47 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   }
 
   function validateStep() {
+    const nextFieldErrors: Partial<Record<FieldErrorKey, string>> = {};
+
     if (currentStep === 1) {
       if (!petCase.owner.name.trim()) {
-        return "Please add your name.";
+        nextFieldErrors["owner.name"] = "Please add your name.";
       }
 
       if (!petCase.owner.email.trim()) {
-        return "Please add your email.";
+        nextFieldErrors["owner.email"] = "Please add your email.";
+      } else if (!emailPattern.test(petCase.owner.email.trim())) {
+        nextFieldErrors["owner.email"] = "Please enter a valid email address.";
       }
     }
 
     if (currentStep === 2) {
       if (!pet.name?.trim()) {
-        return "Please add your cat's name, or write Unknown.";
+        nextFieldErrors["pet.name"] = "Please add your cat's name.";
       }
 
       if (!pet.gender) {
-        return "Please choose your cat's gender.";
+        nextFieldErrors["pet.gender"] = "Please choose your cat's gender.";
       }
     }
 
     if (currentStep === 3) {
       if (!lostDate) {
-        return "Please add the date your cat was last seen.";
+        nextFieldErrors.lostDate = "Please add the date your cat was last seen.";
       }
 
       if (!lostPlace.city.trim()) {
-        return "Please add the city.";
+        nextFieldErrors["lost_place.city"] = "Please add the city.";
       }
     }
 
-    return "";
+    setFieldErrors(nextFieldErrors);
+    return Object.keys(nextFieldErrors).length === 0;
   }
 
   async function goNext() {
-    const validationError = validateStep();
-    if (validationError) {
-      setError(validationError);
+    if (!validateStep()) {
+      setError("");
       return;
     }
 
@@ -231,11 +268,13 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     }
 
     setCurrentStep((current) => Math.min(current + 1, steps.length - 1));
+    setFieldErrors({});
     setError("");
   }
 
   function goBack() {
     setCurrentStep((current) => Math.max(current - 1, 0));
+    setFieldErrors({});
     setError("");
   }
 
@@ -252,6 +291,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   function startOver() {
     setPetCase(createEmptyCase());
     setCurrentStep(0);
+    setFieldErrors({});
     setError("");
     setSubmitted(false);
     rewriteToHomeUrl();
@@ -315,21 +355,18 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   return (
     <Card className="mx-auto w-full max-w-[460px] overflow-hidden rounded-[2.5rem] border-0 bg-white shadow-2xl shadow-[#d9b28b]/25 md:max-w-3xl">
       <CardHeader className="gap-5 p-5 sm:p-6">
-        <div className="flex items-center justify-end gap-4">
-          <span className="rounded-full bg-[#f4eee6] px-3 py-1 text-sm font-bold text-[#74675d]">
-            {currentStep + 1}/{steps.length}
-          </span>
-        </div>
         <div className="space-y-2">
-          <div className="relative h-8">
+          <div className="relative flex h-8 items-center justify-end">
             <Badge
               variant="secondary"
               className="absolute top-0 h-8 rounded-full bg-[#ffe6a8] px-3 text-[#7a4b21] shadow-sm transition-[left,transform] duration-300 ease-out"
               style={{ left: `${progress}%`, transform: `translateX(-${progress}%)` }}
             >
-              <TriangleAlert className="size-3.5" />
-              Almost found your cat
+              {progressLabel}
             </Badge>
+            <span className="rounded-full bg-[#f4eee6] px-3 py-1 text-sm font-bold text-[#74675d]">
+              {currentStep + 1}/{steps.length}
+            </span>
           </div>
           <Progress value={progress} className="h-2 bg-[#f4eee6]" />
         </div>
@@ -357,53 +394,50 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         </div>
         {error ? <p className="mt-4 rounded-full bg-red-50 px-4 py-2 text-sm font-bold text-red-600">{error}</p> : null}
       </CardContent>
-      <CardFooter className="flex items-center justify-between gap-3 bg-white p-5 pt-1 sm:p-6 sm:pt-1">
-        <Button
-          variant="outline"
-          className="h-12 rounded-full border-[#eadfD1] bg-white px-5 text-[#74675d]"
-          onClick={goBack}
-          disabled={currentStep === 0 || isSaving}
-        >
-          <ChevronLeft className="size-4" />
-          Back
-        </Button>
-        {currentStep === 0 ? (
-          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
-            {isSaving ? "Saving" : "Start"}
-            <ChevronRight className="size-4" />
+      {currentStep > 0 ? (
+        <CardFooter className="flex items-center justify-between gap-3 bg-white p-5 pt-1 sm:p-6 sm:pt-1">
+          <Button
+            variant="outline"
+            className="h-12 rounded-full border-[#eadfD1] bg-white px-5 text-[#74675d]"
+            onClick={goBack}
+            disabled={isSaving}
+          >
+            <ChevronLeft className="size-4" />
+            Back
           </Button>
-        ) : currentStep === steps.length - 1 ? (
-          <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={createCasePreview} disabled={isSaving}>
-            {isSaving ? "Saving" : "Create case"}
-            <CheckCircle2 className="size-4" />
-          </Button>
-        ) : (
-          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
-            {isSaving ? "Saving" : "Continue"}
-            <ChevronRight className="size-4" />
-          </Button>
-        )}
-      </CardFooter>
+          {currentStep === steps.length - 1 ? (
+            <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={createCasePreview} disabled={isSaving}>
+              {isSaving ? "Saving" : "Create case"}
+              <CheckCircle2 className="size-4" />
+            </Button>
+          ) : (
+            <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
+              {isSaving ? "Saving" : "Continue"}
+              <ChevronRight className="size-4" />
+            </Button>
+          )}
+        </CardFooter>
+      ) : null}
     </Card>
   );
 
   function renderStep() {
     switch (currentStep) {
       case 0:
-        return <WelcomeStep />;
+        return <WelcomeStep isSaving={isSaving} onStart={goNext} />;
       case 1:
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <Field label="Your name" required>
-                <Input value={petCase.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" />
+              <Field label="Your name" required error={fieldErrors["owner.name"]}>
+                <Input value={petCase.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" aria-invalid={Boolean(fieldErrors["owner.name"])} />
               </Field>
-              <Field label="Email" required>
-                <Input type="email" value={petCase.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" />
+              <Field label="Email" required error={fieldErrors["owner.email"]}>
+                <Input type="email" value={petCase.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors["owner.email"])} />
               </Field>
             </TwoColumnFields>
             <Field label="Phone number">
-              <Input value={petCase.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional" />
+              <Input value={petCase.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional, e.g. +1 555 123 4567" />
             </Field>
           </div>
         );
@@ -411,10 +445,10 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <Field label="Cat name" required>
-                <Input value={pet.name ?? ""} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" />
+              <Field label="Cat name" required error={fieldErrors["pet.name"]}>
+                <Input value={pet.name ?? ""} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" aria-invalid={Boolean(fieldErrors["pet.name"])} />
               </Field>
-              <Field label="Gender" required>
+              <Field label="Gender" required error={fieldErrors["pet.gender"]}>
                 <OptionGroup options={genderOptions} value={pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
               </Field>
             </TwoColumnFields>
@@ -432,8 +466,8 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <Field label="Date last seen" required>
-                <Input type="date" value={lostDate} onChange={(event) => updateLostDate(event.target.value)} />
+              <Field label="Date last seen" required error={fieldErrors.lostDate}>
+                <Input type="date" value={lostDate} onChange={(event) => updateLostDate(event.target.value)} aria-invalid={Boolean(fieldErrors.lostDate)} />
               </Field>
               <Field label="Approximate time">
                 <Input type="time" value={lostTime} onChange={(event) => updateLostTime(event.target.value)} />
@@ -443,8 +477,8 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
               <Field label="Country">
                 <Input value={lostPlace.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="US" />
               </Field>
-              <Field label="City" required>
-                <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" />
+              <Field label="City" required error={fieldErrors["lost_place.city"]}>
+                <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" aria-invalid={Boolean(fieldErrors["lost_place.city"])} />
               </Field>
             </TwoColumnFields>
             <TwoColumnFields>
@@ -665,7 +699,7 @@ function rewriteToHomeUrl() {
   }
 }
 
-function WelcomeStep() {
+function WelcomeStep({ isSaving, onStart }: { isSaving: boolean; onStart: () => void }) {
   return (
     <div className="grid gap-4">
       <div className="rounded-[2rem] bg-white p-5 shadow-sm">
@@ -674,19 +708,13 @@ function WelcomeStep() {
           Stay hopeful
         </div>
         <p className="mt-4 text-2xl font-black leading-tight text-[#2d251f]">
-          A clear post helps people help faster.
+          A clear post helps people find beloved pet faster.
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-[1.5rem] bg-[#bfe8d5] p-4 text-[#245643]">
-          <Camera className="mb-3 size-7" />
-          <p className="font-black">Photos</p>
-        </div>
-        <div className="rounded-[1.5rem] bg-[#ffe6a8] p-4 text-[#7a4b21]">
-          <MapPin className="mb-3 size-7" />
-          <p className="font-black">Location</p>
-        </div>
-      </div>
+      <Button className="mt-5 h-20 rounded-[1.5rem] bg-[#2d251f] text-xl font-black text-white shadow-lg shadow-[#d9b28b]/40 hover:bg-[#46382f]" onClick={onStart} disabled={isSaving}>
+        Start
+        <ChevronRight className="size-6" />
+      </Button>
     </div>
   );
 }
@@ -694,10 +722,12 @@ function WelcomeStep() {
 function Field({
   label,
   required,
+  error,
   children,
 }: {
   label: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -706,6 +736,7 @@ function Field({
         {label} {required ? <span className="text-red-500">*</span> : null}
       </Label>
       {children}
+      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
     </div>
   );
 }

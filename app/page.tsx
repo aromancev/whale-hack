@@ -1,6 +1,6 @@
 import { MissingCatForm } from "@/components/missing-cat-form";
 import type { Case } from "@/domain/case";
-import { PawPrint, TriangleAlert } from "lucide-react";
+import { PawPrint, Cat } from "lucide-react";
 
 export default function Home() {
   return <IntakePage />;
@@ -18,8 +18,8 @@ export function IntakePage({ initialCase }: { initialCase?: Case }) {
           Let&apos;s find them together.
         </h1>
         <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#bfe8d5] px-3 py-1 text-xs font-bold text-[#245643]">
-          <TriangleAlert className="size-3.5" />
-          Cats only
+          Cats only for now
+          <Cat className="size-3.5" />
         </span>
         <div className="mx-auto mt-4 flex max-w-sm items-center justify-center gap-3 text-base font-medium leading-7 text-[#74675d]">
           <p>One calm step at a time.</p>
