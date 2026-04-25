@@ -53,42 +53,53 @@ describe("petCaseRepository", () => {
   it("returns an empty collection when no cases are added", async () => {
     const repository = createTestRepository();
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual([]);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual([]);
   });
 
   it("adds case ids to a country and city collection", async () => {
     const repository = createTestRepository();
 
-    await repository.addCaseToCollection("US", "New York", "case-1");
-    await repository.addCaseToCollection("US", "New York", "case-2");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-1");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-2");
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual(
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual(
       expect.arrayContaining(["case-1", "case-2"]),
     );
-    await expect(repository.getCollection("US", "New York")).resolves.toHaveLength(2);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toHaveLength(2);
   });
 
   it("does not duplicate case ids in a collection", async () => {
     const repository = createTestRepository();
 
-    await repository.addCaseToCollection("US", "New York", "case-1");
-    await repository.addCaseToCollection("US", "New York", "case-2");
-    await repository.addCaseToCollection("US", "New York", "case-1");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-1");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-2");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-1");
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual(
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual(
       expect.arrayContaining(["case-1", "case-2"]),
     );
-    await expect(repository.getCollection("US", "New York")).resolves.toHaveLength(2);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toHaveLength(2);
   });
 
   it("removes case ids from a country and city collection", async () => {
     const repository = createTestRepository();
 
-    await repository.addCaseToCollection("US", "New York", "case-1");
-    await repository.addCaseToCollection("US", "New York", "case-2");
-    await repository.removeCaseFromCollection("US", "New York", "case-1");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-1");
+    await repository.addCaseToCollection("nl", "Amsterdam", "case-2");
+    await repository.removeCaseFromCollection("nl", "Amsterdam", "case-1");
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual(["case-2"]);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual(["case-2"]);
+  });
+
+  it("loads multiple cases in one batched read", async () => {
+    const repository = createTestRepository();
+    const firstCase = createCase("case-1");
+    const secondCase = createCase("case-2");
+
+    await repository.save(firstCase);
+    await repository.save(secondCase);
+
+    await expect(repository.getMany(["case-1", "case-2"])).resolves.toEqual([firstCase, secondCase]);
   });
 
   it("validates cases with the zod schema", () => {
@@ -148,9 +159,9 @@ function createCase(id: string, overrides: Partial<Case> = {}): Case {
     },
     lost_time: "2026-04-25T12:00:00.000Z" as Case["lost_time"],
     lost_place: {
-      country: "US",
-      city: "New York",
-      full_address: "123 Example St, New York, NY",
+      country: "nl",
+      city: "Amsterdam",
+      full_address: "123 Example St, Amsterdam",
     },
     sightings: [],
     created_at: "2026-04-25T12:01:00.000Z" as Case["created_at"],

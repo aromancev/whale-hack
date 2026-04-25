@@ -6,8 +6,12 @@ import { PetSchema } from "./pets";
 const isoDateTimeStringSchema = z.iso.datetime().transform((value) => value as ISODateTimeString);
 const caseStatusSchema = z.enum(["created", "open", "closed"]);
 
+export const countries = ['nl'] as const;
+export const CountrySchema = z.enum(countries)
+export type Country = z.infer<typeof CountrySchema>
+
 export const AddressSchema = z.object({
-  country: z.string(),
+  country: CountrySchema,
   city: z.string(),
   region: z.string().optional(),
   district: z.string().optional(),

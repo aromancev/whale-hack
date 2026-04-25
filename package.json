@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run --tagsFilter='!external'",
     "test:external": "vitest run --tagsFilter=external",
-    "fetch:cats": "node scripts/fetch-amivedi-cats.mjs"
+    "fetch:cats": "node scripts/fetch-amivedi-cats.mjs",
+    "parse:cats": "node scripts/parse-cats-to-cases.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

@@ -76,6 +76,10 @@ export function createInMemoryFileStorage(): FileStorage {
       return files.get(stripMemoryUrl(pathnameOrUrl)) ?? null;
     },
 
+    async getMany(pathnamesOrUrls) {
+      return pathnamesOrUrls.map((pathnameOrUrl) => files.get(stripMemoryUrl(pathnameOrUrl)) ?? null);
+    },
+
     async delete(pathnameOrUrl) {
       files.delete(stripMemoryUrl(pathnameOrUrl));
     },

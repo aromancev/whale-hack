@@ -50,6 +50,7 @@ export type ListFilesResult = {
 export type FileStorage = {
   put(pathname: string, body: FileStorageBody, options?: PutFileOptions): Promise<StoredFile>;
   get(pathnameOrUrl: string): Promise<StoredFileContent | null>;
+  getMany(pathnamesOrUrls: string[]): Promise<(StoredFileContent | null)[]>;
   delete(pathnameOrUrl: string): Promise<void>;
   list(options?: ListFilesOptions): Promise<ListFilesResult>;
 };
@@ -109,6 +110,10 @@ const vercelBlobStorage: FileStorage = {
       uploadedAt: result.blob.uploadedAt,
       body: await readableStreamToUint8Array(result.stream),
     };
+  },
+
+  async getMany(pathnamesOrUrls) {
+    return Promise.all(pathnamesOrUrls.map((pathnameOrUrl) => vercelBlobStorage.get(pathnameOrUrl)));
   },
 
   async delete(pathnameOrUrl) {
@@ -180,6 +185,10 @@ const localFileStorage: FileStorage = {
 
       throw error;
     }
+  },
+
+  async getMany(pathnamesOrUrls) {
+    return Promise.all(pathnamesOrUrls.map((pathnameOrUrl) => localFileStorage.get(pathnameOrUrl)));
   },
 
   async delete(pathnameOrUrl) {

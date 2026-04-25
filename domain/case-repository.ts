@@ -28,11 +28,24 @@ export class PetCaseRepository {
     return this.getPetCase(id);
   }
 
+  async getMany(ids: string[]) {
+    const storedFiles = await this.storage.getMany(ids.map((id) => this.casePathname(id)));
+
+    return storedFiles
+      .map((storedFile) => {
+        if (!storedFile) {
+          return null;
+        }
+
+        return CaseSchema.parse(JSON.parse(Buffer.from(storedFile.body).toString("utf8")));
+      })
+      .filter((petCase): petCase is Case => petCase !== null);
+  }
+
   async list() {
     const ids = await this.getCaseIds();
-    const cases = await Promise.all(ids.map((id) => this.getPetCase(id)));
 
-    return cases.filter((petCase): petCase is Case => petCase !== null);
+    return this.getMany(ids);
   }
 
   async delete(id: string) {

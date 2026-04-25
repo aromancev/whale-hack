@@ -14,7 +14,7 @@ describe("CasesService", () => {
 
     await service.save(petCase);
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual(["case-1"]);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual(["case-1"]);
   });
 
   it("does not add non-open cases to a collection", async () => {
@@ -23,7 +23,7 @@ describe("CasesService", () => {
 
     await service.save(petCase);
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual([]);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual([]);
   });
 
   it("removes a case from its collection when it is no longer open", async () => {
@@ -32,7 +32,7 @@ describe("CasesService", () => {
     await service.save(createCase("case-1", { status: "open" }));
     await service.save(createCase("case-1", { status: "closed" }));
 
-    await expect(repository.getCollection("US", "New York")).resolves.toEqual([]);
+    await expect(repository.getCollection("nl", "Amsterdam")).resolves.toEqual([]);
   });
 
   it("throws when an open case does not have a lost place", async () => {
@@ -50,7 +50,7 @@ describe("CasesService", () => {
     const petCase = createCase("case-1", {
       status: "open",
       lost_place: {
-        country: "US",
+        country: "nl",
         city: "",
       },
     });
@@ -59,6 +59,22 @@ describe("CasesService", () => {
       "Open cases must have a lost place with country and city.",
     );
     await expect(repository.get("case-1")).resolves.toBeNull();
+  });
+
+  it("returns all cases from the collection when matching a pet", async () => {
+    const { service } = createTestService();
+    const firstCase = createCase("case-1", { status: "open" });
+    const secondCase = createCase("case-2", { status: "open" });
+    const closedCase = createCase("case-3", { status: "closed" });
+
+    await service.save(firstCase);
+    await service.save(secondCase);
+    await service.save(closedCase);
+
+    await expect(service.matchPet(firstCase.pet!, "nl", "Amsterdam")).resolves.toEqual([
+      firstCase,
+      secondCase,
+    ]);
   });
 });
 
@@ -92,9 +108,9 @@ function createCase(id: string, overrides: Partial<Case> = {}): Case {
     },
     lost_time: "2026-04-25T12:00:00.000Z" as Case["lost_time"],
     lost_place: {
-      country: "US",
-      city: "New York",
-      full_address: "123 Example St, New York, NY",
+      country: "nl",
+      city: "Amsterdam",
+      full_address: "123 Example St, Amsterdam",
     },
     sightings: [],
     created_at: "2026-04-25T12:01:00.000Z" as Case["created_at"],
