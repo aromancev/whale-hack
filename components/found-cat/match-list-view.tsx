@@ -51,7 +51,13 @@ export function MatchListView({
                   </span>
                   <span>Lost {match.lostDate}</span>
                   <span>{match.color}</span>
+                  <span>{formatScore(match.score)} match</span>
                 </div>
+                <ul className="mt-3 space-y-1 text-sm font-semibold leading-6 text-[#476a58]">
+                  {match.reasoning.slice(0, 2).map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
               </div>
               <ArrowRight className="size-5 shrink-0 text-[#5f796b] transition group-hover:translate-x-0.5 group-hover:text-[#4f9a78]" />
             </Link>
@@ -69,4 +75,8 @@ export function MatchListView({
       </button>
     </div>
   );
+}
+
+function formatScore(score: number) {
+  return `${Math.round(score * 100)}%`;
 }
