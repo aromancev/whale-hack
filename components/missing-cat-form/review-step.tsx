@@ -26,8 +26,8 @@ export function ReviewStep({ petCase, pet, lostPlace }: { petCase: Case; pet: Pe
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <ReviewCard title="Owner" items={[petCase.owner.name, petCase.owner.email, petCase.owner.phone_number ?? ""]} />
-        <ReviewCard title="Pet" items={[pet.breed, pet.breed_group, pet.gender ?? "", pet.size ?? ""]} />
-        <ReviewCard title="Details" items={[pet.appearance ?? "", pet.description ?? "", pet.unique_details ?? ""]} />
+        <ReviewCard title="Pet" items={[pet.breed, pet.gender ?? "", pet.size ?? ""]} />
+        <ReviewCard title="Details" items={[pet.appearance ?? "", pet.unique_details ?? ""]} />
         <ReviewCard title="Safety" items={[pet.health_info ?? "", pet.behavior ?? ""]} />
       </div>
       <Separator className="bg-[#eadfd1]" />
@@ -40,12 +40,12 @@ function ReviewCard({ title, items }: { title: string; items: string[] }) {
   const visibleItems = items.filter(Boolean);
 
   return (
-    <div className="rounded-[1.5rem] bg-white p-4 shadow-sm">
+    <div className="min-w-0 rounded-[1.5rem] bg-white p-4 shadow-sm">
       <h4 className="font-black text-[#2d251f]">{title}</h4>
       {visibleItems.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {visibleItems.map((item) => (
-            <Badge key={item} variant="secondary" className="h-auto rounded-full bg-[#f4eee6] px-3 py-1 text-[#74675d]">
+            <Badge key={item} variant="secondary" className="h-auto max-w-full whitespace-normal break-words rounded-full bg-[#f4eee6] px-3 py-1 text-[#74675d]">
               {item}
             </Badge>
           ))}

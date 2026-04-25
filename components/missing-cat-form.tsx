@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Heart,
   PawPrint,
-  ShieldCheck,
   Sparkles,
   User,
 } from "lucide-react";
@@ -29,7 +28,6 @@ import { AppearanceStep } from "@/components/missing-cat-form/appearance-step";
 import { CatBasicsStep } from "@/components/missing-cat-form/cat-basics-step";
 import { FormNavigation } from "@/components/missing-cat-form/form-navigation";
 import { HealthBehaviorStep } from "@/components/missing-cat-form/health-behavior-step";
-import { IdDetailsStep } from "@/components/missing-cat-form/id-details-step";
 import { LastSeenStep } from "@/components/missing-cat-form/last-seen-step";
 import { OwnerStep } from "@/components/missing-cat-form/owner-step";
 import { PhotosStep } from "@/components/missing-cat-form/photos-step";
@@ -38,15 +36,20 @@ import { RewardStep } from "@/components/missing-cat-form/reward-step";
 import type { FieldErrorKey } from "@/components/missing-cat-form/types";
 import { WelcomeStep } from "@/components/missing-cat-form/welcome-step";
 import { CAT_BREEDS_BY_GROUP, CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
-import type { Address, Case } from "@/domain/case";
+import { type Address, type Case, CaseSchema } from "@/domain/case";
 import type { Owner } from "@/domain/owner";
 import type { Pet } from "@/domain/pets";
 import type { Size } from "@/domain/pets";
+import { nowAsISODateTimeString, toISODateTimeString } from "@/platform/time";
+import { z } from "zod";
 
 type IntakeErrorResponse = {
   error?: string;
   issues?: { path: string; message: string }[];
 };
+
+const intakeSuccessSchema = z.object({ id: z.string() });
+const caseResponseSchema = z.object({ case: CaseSchema });
 
 type Step = {
   title: string;
@@ -91,11 +94,6 @@ const steps: Step[] = [
     icon: BadgeCheck,
   },
   {
-    title: "ID details",
-    description: "Collar and chip fields.",
-    icon: ShieldCheck,
-  },
-  {
     title: "Reward",
     description: "Optional case reward.",
     icon: Heart,
@@ -109,8 +107,7 @@ const steps: Step[] = [
 
 const sizeOptions: Size[] = ["small", "medium", "large"];
 const genderOptions: NonNullable<Pet["gender"]>[] = ["female", "male"];
-const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
-const yesNoOptions = ["Yes", "No"];
+const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["young", "adult", "senior"];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const unknownBreed = "domestic_cat" satisfies CatBreed;
 const catBreedOptions = Object.values(CAT_BREEDS_BY_GROUP)
@@ -127,7 +124,6 @@ const progressLabels = [
   "Last seen added",
   "Appearance added",
   "Health info added",
-  "ID details added",
   "Reward added",
   "Almost found your cat",
 ];
@@ -401,10 +397,12 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         return;
       }
 
-      const body = await caseResponse.json() as { case?: Case };
-      if (body.case) {
-        setPetCase(body.case);
-        setBreedSearch(formatCatOption(body.case.pet?.breed ?? ""));
+      const parsed = caseResponseSchema.safeParse(await caseResponse.json());
+      if (parsed.success) {
+        setPetCase(parsed.data.case);
+        setBreedSearch(formatCatOption(parsed.data.case.pet?.breed ?? ""));
+      } else {
+        setError("We received an unexpected response from the server.");
       }
     } catch {
       setError("We couldn't upload this photo. Please check your connection and try again.");
@@ -436,9 +434,9 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         return await getIntakeErrorMessage(response);
       }
 
-      const savedCase = await response.json() as { id?: string };
-      if (savedCase.id) {
-        rewriteToCaseUrl(savedCase.id);
+      const savedCase = intakeSuccessSchema.safeParse(await response.json());
+      if (savedCase.success) {
+        rewriteToCaseUrl(savedCase.data.id);
       }
 
       return "";
@@ -571,16 +569,6 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       case 6:
         return <HealthBehaviorStep pet={pet} updatePet={updatePet} />;
       case 7:
-        return (
-          <IdDetailsStep
-            pet={pet}
-            yesNoOptions={yesNoOptions}
-            booleanToYesNo={booleanToYesNo}
-            yesNoToBoolean={yesNoToBoolean}
-            updatePet={updatePet}
-          />
-        );
-      case 8:
         return <RewardStep petCase={petCase} updateReward={updateReward} />;
       default:
         return <ReviewStep petCase={petCase} pet={pet} lostPlace={lostPlace} />;
@@ -614,7 +602,7 @@ function createIntakeId() {
 }
 
 function createTimestamp() {
-  return new Date().toISOString() as Case["created_at"];
+  return nowAsISODateTimeString();
 }
 
 function readFileAsDataUrl(file: File) {
@@ -639,6 +627,7 @@ function createEmptyCase(): Case {
 
   return {
     id: createIntakeId(),
+    status: "created",
     owner: {
       name: "",
       email: "",
@@ -657,7 +646,7 @@ function createEmptyPet(): Pet {
     breed: "",
     breed_group: "",
     photo_urls: [],
-    gender: "" as Pet["gender"],
+    gender: undefined,
   };
 }
 
@@ -680,7 +669,7 @@ function createLostTime(date: string, time: string) {
     return undefined;
   }
 
-  return new Date(`${date}T${time || "00:00"}`).toISOString() as Case["lost_time"];
+  return toISODateTimeString(`${date}T${time || "00:00"}`);
 }
 
 function formatCatOption(value: string) {
@@ -696,28 +685,6 @@ function findCatBreed(value: string) {
   const option = catBreedOptions.find((breed) => breed.label.toLowerCase() === normalizedValue || breed.value === normalizedValue);
 
   return option?.value;
-}
-
-function yesNoToBoolean(value: string) {
-  if (value === "Yes") {
-    return true;
-  }
-
-  if (value === "No") {
-    return false;
-  }
-}
-
-function booleanToYesNo(value: boolean | undefined) {
-  if (value === true) {
-    return "Yes";
-  }
-
-  if (value === false) {
-    return "No";
-  }
-
-  return "";
 }
 
 function rewriteToCaseUrl(caseId: string) {

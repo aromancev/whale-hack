@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { IntakePage } from "@/app/page";
-import { petCaseRepository } from "@/domain/case";
+import { petCaseRepository } from "@/domain/case-repository";
 
 export default async function CasePage({
   params,

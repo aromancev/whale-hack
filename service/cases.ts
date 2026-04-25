@@ -1,4 +1,5 @@
-import { petCaseRepository, type Case, type PetCaseRepository } from "@/domain/case";
+import type { Case } from "@/domain/case";
+import { petCaseRepository, type PetCaseRepository } from "@/domain/case-repository";
 
 export class CasesService {
   constructor(private readonly repository: PetCaseRepository) {}

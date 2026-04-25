@@ -25,12 +25,37 @@ export function AppearanceStep({
       <Field label="Age in years">
         <Input type="number" min="0" value={pet.age_years?.toString() ?? ""} onChange={(event) => updatePet("age_years", event.target.value ? Number(event.target.value) : undefined)} placeholder="3" />
       </Field>
+      <OptionGroup label="Wearing collar" options={yesNoOptions} value={booleanToYesNo(pet.collar)} onSelect={(value) => updatePet("collar", yesNoToBoolean(value))} />
       <Field label="Appearance">
         <Textarea value={pet.appearance ?? ""} onChange={(event) => updatePet("appearance", event.target.value)} placeholder="Gray tabby, white chest, long fur..." />
       </Field>
-      <Field label="Description">
-        <Textarea value={pet.description ?? ""} onChange={(event) => updatePet("description", event.target.value)} placeholder="Responds to treats, shy with strangers..." />
+      <Field label="Unique details">
+        <Textarea value={pet.unique_details ?? ""} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
       </Field>
     </div>
   );
+}
+
+const yesNoOptions = ["Yes", "No"];
+
+function yesNoToBoolean(value: string) {
+  if (value === "Yes") {
+    return true;
+  }
+
+  if (value === "No") {
+    return false;
+  }
+}
+
+function booleanToYesNo(value: boolean | undefined) {
+  if (value === true) {
+    return "Yes";
+  }
+
+  if (value === false) {
+    return "No";
+  }
+
+  return "";
 }

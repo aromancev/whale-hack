@@ -14,7 +14,7 @@ export const PetSchema = z.object({
   photo_urls: z.array(z.string()),
   gender: GenderSchema,
   age_years: z.number().optional(),
-  age_group: z.enum(["yong", "adult", "senior"]).optional(),
+  age_group: z.enum(["young", "adult", "senior"]).optional(),
   name: z.string().optional(),
   appearance: z.string().optional(),
   description: z.string().optional(),

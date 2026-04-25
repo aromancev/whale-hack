@@ -3,7 +3,8 @@ import {
   createInMemoryFileStorage,
   createInMemoryKvStore,
 } from "@/platform/testing/in-memory-dependencies";
-import { CaseSchema, PetCaseRepository, type Case } from "./case";
+import { CaseSchema, type Case } from "./case";
+import { PetCaseRepository } from "./case-repository";
 
 describe("petCaseRepository", () => {
   it("saves and loads a case", async () => {

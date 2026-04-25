@@ -13,9 +13,6 @@ export function HealthBehaviorStep({ pet, updatePet }: { pet: Pet; updatePet: Up
       <Field label="Behavior">
         <Textarea value={pet.behavior ?? ""} onChange={(event) => updatePet("behavior", event.target.value)} placeholder="Friendly, scared, may run, do not chase..." />
       </Field>
-      <Field label="Unique details">
-        <Textarea value={pet.unique_details ?? ""} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
-      </Field>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PetCaseRepository, type Case } from "@/domain/case";
+import type { Case } from "@/domain/case";
+import { PetCaseRepository } from "@/domain/case-repository";
 import {
   createInMemoryFileStorage,
   createInMemoryKvStore,
