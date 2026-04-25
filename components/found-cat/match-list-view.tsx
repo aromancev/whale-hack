@@ -1,16 +1,16 @@
 "use client";
 
 import { ArrowRight, MapPin, RotateCcw, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { MatchPhoto } from "./match-photo";
 import { MatchPercent } from "./match-percent";
 import type { MatchCandidate } from "./types";
 
 export function MatchListView({
   matches,
-  onOpen,
   onReset,
 }: {
   matches: MatchCandidate[];
-  onOpen: (caseId: string) => void;
   onReset: () => void;
 }) {
   return (
@@ -31,11 +31,11 @@ export function MatchListView({
       <ul className="mt-8 space-y-3">
         {matches.map((match) => (
           <li key={match.caseId}>
-            <button
-              type="button"
-              onClick={() => onOpen(match.caseId)}
+            <Link
+              href={`/public-case/${encodeURIComponent(match.caseId)}`}
               className="group flex w-full items-center gap-4 rounded-2xl border-2 border-[#b9dec9] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#4f9a78] hover:shadow-[0_10px_0_#9bcfb4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#4f9a78]/25"
             >
+              <MatchPhoto name={match.name} photoUrl={match.photoUrl} />
               <MatchPercent percent={match.matchPercent} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
@@ -56,7 +56,7 @@ export function MatchListView({
                 </div>
               </div>
               <ArrowRight className="size-5 shrink-0 text-[#5f796b] transition group-hover:translate-x-0.5 group-hover:text-[#4f9a78]" />
-            </button>
+            </Link>
           </li>
         ))}
       </ul>

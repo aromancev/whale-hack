@@ -2,22 +2,26 @@ import type { MatchCandidate } from "./types";
 
 export const MOCK_MATCHES: MatchCandidate[] = [
   {
-    caseId: "demo-mochi",
-    name: "Mochi",
+    caseId: "b9da1c91-be03-4475-828c-87d253906ac1",
+    name: "Mis",
+    photoUrl:
+      "/uploads/cases/b9da1c91-be03-4475-828c-87d253906ac1/photos/4ebbc9da-8abe-44b2-bb0a-dd54c450f361.jpg",
     matchPercent: 92,
-    city: "Tel Aviv",
-    lostDate: "Apr 21, 2026",
-    breed: "Domestic shorthair",
-    color: "Tabby & white",
+    city: "Duiv",
+    lostDate: "Apr 23, 2026",
+    breed: "Bengal",
+    color: "Brown spotted",
     reasoning: [
-      "Coat color and tabby pattern match closely",
-      "Same body build and ear shape",
-      "Reported missing 4 km away two days ago",
+      "Distinctive spotted and marbled coat pattern matches closely",
+      "Athletic build and green eyes are consistent with the missing report",
+      "Reported missing nearby on Apr 23",
     ],
   },
   {
     caseId: "demo-luna",
     name: "Luna",
+    photoUrl:
+      "https://images.unsplash.com/photo-1513245543132-31f507417b26?auto=format&fit=crop&w=500&q=80",
     matchPercent: 78,
     city: "Tel Aviv",
     lostDate: "Apr 18, 2026",

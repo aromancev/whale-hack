@@ -4,6 +4,7 @@ export type ViewState = "upload" | ResultState;
 export type MatchCandidate = {
   caseId: string;
   name: string;
+  photoUrl?: string;
   matchPercent: number;
   city: string;
   lostDate: string;

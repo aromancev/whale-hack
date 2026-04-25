@@ -2,6 +2,7 @@
 
 import { ArrowRight, ChevronLeft, MapPin } from "lucide-react";
 import Link from "next/link";
+import { MatchPhoto } from "./match-photo";
 import { MatchPercent } from "./match-percent";
 import type { MatchCandidate } from "./types";
 
@@ -22,6 +23,12 @@ export function MatchDetailView({
         <ChevronLeft className="size-4" />
         Back to matches
       </button>
+
+      {match.photoUrl ? (
+        <div className="mt-5">
+          <MatchPhoto name={match.name} photoUrl={match.photoUrl} size="lg" />
+        </div>
+      ) : null}
 
       <div className="mt-5 flex items-center gap-4">
         <MatchPercent percent={match.matchPercent} size="lg" />
@@ -62,14 +69,14 @@ export function MatchDetailView({
       </div>
 
       <Link
-        href={`/cases/${encodeURIComponent(match.caseId)}`}
+        href={`/public-case/${encodeURIComponent(match.caseId)}`}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e58d57] px-6 py-3 text-base font-black text-white shadow-[0_8px_0_#c0723f] transition hover:-translate-y-0.5 hover:bg-[#d97f47] hover:shadow-[0_10px_0_#a45d33] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e58d57]/30"
       >
         This is the pet
         <ArrowRight className="size-5" />
       </Link>
       <p className="mt-3 text-center text-xs font-semibold text-[#5f796b]">
-        Confirming opens the case so you can contact the owner.
+        Confirming opens the public case so you can contact the owner.
       </p>
     </div>
   );
