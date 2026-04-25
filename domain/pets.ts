@@ -5,6 +5,7 @@ export type Pet = {
     species: 'cat',
     breed: string,
     breed_group: string,
+    photo_urls: string[],
     gender: 'male' | 'female',
     age_years?: number,
     age_group?: 'yong' | 'adult' | 'senior',
