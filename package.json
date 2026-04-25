@@ -11,6 +11,7 @@
     "fetch:cats": "node scripts/fetch-amivedi-cats.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
     "@vercel/blob": "^2.3.3",
     "next": "16.2.4",
     "react": "19.2.4",
