@@ -3,7 +3,7 @@ import {
   createInMemoryFileStorage,
   createInMemoryKvStore,
 } from "@/platform/testing/in-memory-dependencies";
-import { CaseSchema, createPetCaseRepository, type Case } from "./case";
+import { CaseSchema, PetCaseRepository, type Case } from "./case";
 
 describe("petCaseRepository", () => {
   it("saves and loads a case", async () => {
@@ -49,6 +49,47 @@ describe("petCaseRepository", () => {
     await expect(repository.list()).resolves.toEqual([]);
   });
 
+  it("returns an empty collection when no cases are added", async () => {
+    const repository = createTestRepository();
+
+    await expect(repository.getCollection("US", "New York")).resolves.toEqual([]);
+  });
+
+  it("adds case ids to a country and city collection", async () => {
+    const repository = createTestRepository();
+
+    await repository.addCaseToCollection("US", "New York", "case-1");
+    await repository.addCaseToCollection("US", "New York", "case-2");
+
+    await expect(repository.getCollection("US", "New York")).resolves.toEqual(
+      expect.arrayContaining(["case-1", "case-2"]),
+    );
+    await expect(repository.getCollection("US", "New York")).resolves.toHaveLength(2);
+  });
+
+  it("does not duplicate case ids in a collection", async () => {
+    const repository = createTestRepository();
+
+    await repository.addCaseToCollection("US", "New York", "case-1");
+    await repository.addCaseToCollection("US", "New York", "case-2");
+    await repository.addCaseToCollection("US", "New York", "case-1");
+
+    await expect(repository.getCollection("US", "New York")).resolves.toEqual(
+      expect.arrayContaining(["case-1", "case-2"]),
+    );
+    await expect(repository.getCollection("US", "New York")).resolves.toHaveLength(2);
+  });
+
+  it("removes case ids from a country and city collection", async () => {
+    const repository = createTestRepository();
+
+    await repository.addCaseToCollection("US", "New York", "case-1");
+    await repository.addCaseToCollection("US", "New York", "case-2");
+    await repository.removeCaseFromCollection("US", "New York", "case-1");
+
+    await expect(repository.getCollection("US", "New York")).resolves.toEqual(["case-2"]);
+  });
+
   it("validates cases with the zod schema", () => {
     const petCase = createCase("case-1");
 
@@ -82,7 +123,7 @@ describe("petCaseRepository", () => {
 });
 
 function createTestRepository() {
-  return createPetCaseRepository({
+  return new PetCaseRepository({
     kv: createInMemoryKvStore(),
     storage: createInMemoryFileStorage(),
   });

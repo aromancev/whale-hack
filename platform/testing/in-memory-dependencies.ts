@@ -19,6 +19,25 @@ export function createInMemoryKvStore(): KvStore {
       values.set(key, value);
     },
 
+    async addToSet(key, value) {
+      const currentValues = JSON.parse(values.get(key) ?? "[]") as string[];
+
+      values.set(key, JSON.stringify([...new Set([...currentValues, value])]));
+    },
+
+    async removeFromSet(key, value) {
+      const currentValues = JSON.parse(values.get(key) ?? "[]") as string[];
+
+      values.set(
+        key,
+        JSON.stringify(currentValues.filter((currentValue) => currentValue !== value)),
+      );
+    },
+
+    async getSet(key) {
+      return JSON.parse(values.get(key) ?? "[]") as string[];
+    },
+
     async delete(key) {
       values.delete(key);
     },

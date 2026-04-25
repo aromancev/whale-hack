@@ -48,89 +48,99 @@ export type Address = z.infer<typeof AddressSchema>;
 export type Sighting = z.infer<typeof SightingSchema>;
 export type Case = z.infer<typeof CaseSchema>;
 
-export type PetCaseRepository = {
-  save(petCase: Case): Promise<Case>;
-  get(id: string): Promise<Case | null>;
-  list(): Promise<Case[]>;
-  delete(id: string): Promise<void>;
-};
-
 const petCaseIndexKey = "pet-cases:index";
 
-export const petCaseRepository = createPetCaseRepository();
+export class PetCaseRepository {
+  private readonly kv: KvStore;
+  private readonly storage: FileStorage;
 
-export function createPetCaseRepository(
-  dependencies: { kv?: KvStore; storage?: FileStorage } = {},
-): PetCaseRepository {
-  const kv = dependencies.kv ?? kvStore;
-  const storage = dependencies.storage ?? fileStorage;
-
-  return {
-    async save(petCase) {
-      const validCase = CaseSchema.parse(petCase);
-
-      await storage.put(casePathname(validCase.id), JSON.stringify(validCase), {
-        contentType: "application/json",
-      });
-      await saveCaseId(kv, validCase.id);
-
-      return validCase;
-    },
-
-    get(id) {
-      return getPetCase(storage, id);
-    },
-
-    async list() {
-      const ids = await getCaseIds(kv);
-      const cases = await Promise.all(ids.map((id) => getPetCase(storage, id)));
-
-      return cases.filter((petCase): petCase is Case => petCase !== null);
-    },
-
-    async delete(id) {
-      await storage.delete(casePathname(id));
-      await removeCaseId(kv, id);
-    },
-  };
-}
-
-async function getPetCase(storage: FileStorage, id: string) {
-  const storedFile = await storage.get(casePathname(id));
-
-  if (!storedFile) {
-    return null;
+  constructor(dependencies: { kv?: KvStore; storage?: FileStorage } = {}) {
+    this.kv = dependencies.kv ?? kvStore;
+    this.storage = dependencies.storage ?? fileStorage;
   }
 
-  return CaseSchema.parse(JSON.parse(Buffer.from(storedFile.body).toString("utf8")));
-}
+  async save(petCase: Case) {
+    const validCase = CaseSchema.parse(petCase);
 
-async function saveCaseId(kv: KvStore, id: string) {
-  const ids = await getCaseIds(kv);
-  const nextIds = [id, ...ids.filter((existingId) => existingId !== id)];
+    await this.storage.put(this.casePathname(validCase.id), JSON.stringify(validCase), {
+      contentType: "application/json",
+    });
+    await this.saveCaseId(validCase.id);
 
-  await kv.set(petCaseIndexKey, JSON.stringify(nextIds));
-}
-
-async function removeCaseId(kv: KvStore, id: string) {
-  const ids = await getCaseIds(kv);
-
-  await kv.set(
-    petCaseIndexKey,
-    JSON.stringify(ids.filter((existingId) => existingId !== id)),
-  );
-}
-
-async function getCaseIds(kv: KvStore) {
-  const value = await kv.get(petCaseIndexKey);
-
-  if (!value) {
-    return [];
+    return validCase;
   }
 
-  return JSON.parse(value) as string[];
+  get(id: string) {
+    return this.getPetCase(id);
+  }
+
+  async list() {
+    const ids = await this.getCaseIds();
+    const cases = await Promise.all(ids.map((id) => this.getPetCase(id)));
+
+    return cases.filter((petCase): petCase is Case => petCase !== null);
+  }
+
+  async delete(id: string) {
+    await this.storage.delete(this.casePathname(id));
+    await this.removeCaseId(id);
+  }
+
+  async addCaseToCollection(country: string, city: string, caseId: string) {
+    await this.kv.addToSet(this.collectionKey(country, city), caseId);
+  }
+
+  async removeCaseFromCollection(country: string, city: string, caseId: string) {
+    await this.kv.removeFromSet(this.collectionKey(country, city), caseId);
+  }
+
+  async getCollection(country: string, city: string) {
+    return this.kv.getSet(this.collectionKey(country, city));
+  }
+
+  private async getPetCase(id: string) {
+    const storedFile = await this.storage.get(this.casePathname(id));
+
+    if (!storedFile) {
+      return null;
+    }
+
+    return CaseSchema.parse(JSON.parse(Buffer.from(storedFile.body).toString("utf8")));
+  }
+
+  private async saveCaseId(id: string) {
+    const ids = await this.getCaseIds();
+    const nextIds = [id, ...ids.filter((existingId) => existingId !== id)];
+
+    await this.kv.set(petCaseIndexKey, JSON.stringify(nextIds));
+  }
+
+  private async removeCaseId(id: string) {
+    const ids = await this.getCaseIds();
+
+    await this.kv.set(
+      petCaseIndexKey,
+      JSON.stringify(ids.filter((existingId) => existingId !== id)),
+    );
+  }
+
+  private async getCaseIds() {
+    const value = await this.kv.get(petCaseIndexKey);
+
+    if (!value) {
+      return [];
+    }
+
+    return JSON.parse(value) as string[];
+  }
+
+  private casePathname(id: string) {
+    return `cases/${encodeURIComponent(id)}.json`;
+  }
+
+  private collectionKey(country: string, city: string) {
+    return `pet-cases:collection:${encodeURIComponent(country)}/${encodeURIComponent(city)}`;
+  }
 }
 
-function casePathname(id: string) {
-  return `cases/${encodeURIComponent(id)}.json`;
-}
+export const petCaseRepository = new PetCaseRepository();

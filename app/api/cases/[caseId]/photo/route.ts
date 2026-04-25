@@ -1,8 +1,9 @@
-import { CaseSchema, petCaseRepository, type Case } from "@/domain/case";
+import { CaseSchema, type Case } from "@/domain/case";
 import type { Pet } from "@/domain/pets";
 import { createAnthropicAiCapabilities } from "@/platform/ai";
 import { fileStorage } from "@/platform/file-storage";
 import { CatEnricher, EnrichSchema, type CatEnrich } from "@/service/cat-enrich";
+import { casesService } from "@/service/cases";
 import { z } from "zod";
 
 const PhotoUploadSchema = z.object({
@@ -37,7 +38,7 @@ export async function POST(
   );
   const enriched = await enricher.enrichFromImage(parsedBody.data.base64Image);
 
-  const existingCase = await petCaseRepository.get(caseId);
+  const existingCase = await casesService.get(caseId);
   if (!existingCase) {
     return Response.json({ error: "Case not found." }, { status: 404 });
   }
@@ -47,7 +48,7 @@ export async function POST(
     updated_at: new Date().toISOString(),
   });
 
-  await petCaseRepository.save(updatedCase);
+  await casesService.save(updatedCase);
 
   return Response.json({ case: updatedCase });
 }

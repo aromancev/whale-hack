@@ -7,6 +7,9 @@ export type KvSetOptions = {
 export type KvStore = {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, options?: KvSetOptions): Promise<void>;
+  addToSet(key: string, value: string): Promise<void>;
+  removeFromSet(key: string, value: string): Promise<void>;
+  getSet(key: string): Promise<string[]>;
   delete(key: string): Promise<void>;
   has(key: string): Promise<boolean>;
 };
@@ -32,6 +35,24 @@ export function createRedisKvStore(url = redisUrl): KvStore {
       }
 
       await client.set(key, value);
+    },
+
+    async addToSet(key, value) {
+      const client = await getRedisClient(url);
+
+      await client.sAdd(key, value);
+    },
+
+    async removeFromSet(key, value) {
+      const client = await getRedisClient(url);
+
+      await client.sRem(key, value);
+    },
+
+    async getSet(key) {
+      const client = await getRedisClient(url);
+
+      return client.sMembers(key);
     },
 
     async delete(key) {
