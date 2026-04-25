@@ -2,13 +2,17 @@ import { z } from "zod";
 
 export const ColorSchema = z.string();
 export const SizeSchema = z.enum(["small", "medium", "large"]);
+export const GenderSchema = z.preprocess(
+  (value) => value === "" ? undefined : value,
+  z.enum(["male", "female"]).optional(),
+);
 
 export const PetSchema = z.object({
   species: z.literal("cat"),
   breed: z.string(),
   breed_group: z.string(),
   photo_urls: z.array(z.string()),
-  gender: z.enum(["male", "female"]),
+  gender: GenderSchema,
   age_years: z.number().optional(),
   age_group: z.enum(["yong", "adult", "senior"]).optional(),
   name: z.string().optional(),

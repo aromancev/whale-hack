@@ -64,6 +64,21 @@ describe("petCaseRepository", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
   });
+
+  it("accepts draft pet details before gender is selected", () => {
+    const petCase = {
+      ...createCase("case-1"),
+      pet: {
+        species: "cat",
+        breed: "",
+        breed_group: "",
+        photo_urls: [],
+        gender: "",
+      },
+    };
+
+    expect(CaseSchema.parse(petCase).pet?.gender).toBeUndefined();
+  });
 });
 
 function createTestRepository() {

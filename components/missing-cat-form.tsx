@@ -7,8 +7,6 @@ import {
   Camera,
   Cat,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Heart,
   PawPrint,
   ShieldCheck,
@@ -26,19 +24,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { AppearanceStep } from "@/components/missing-cat-form/appearance-step";
+import { CatBasicsStep } from "@/components/missing-cat-form/cat-basics-step";
+import { FormNavigation } from "@/components/missing-cat-form/form-navigation";
+import { HealthBehaviorStep } from "@/components/missing-cat-form/health-behavior-step";
+import { IdDetailsStep } from "@/components/missing-cat-form/id-details-step";
+import { LastSeenStep } from "@/components/missing-cat-form/last-seen-step";
+import { OwnerStep } from "@/components/missing-cat-form/owner-step";
+import { PhotosStep } from "@/components/missing-cat-form/photos-step";
+import { ReviewStep } from "@/components/missing-cat-form/review-step";
+import { RewardStep } from "@/components/missing-cat-form/reward-step";
+import type { FieldErrorKey } from "@/components/missing-cat-form/types";
+import { WelcomeStep } from "@/components/missing-cat-form/welcome-step";
 import { CAT_BREEDS_BY_GROUP, CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
 import type { Address, Case } from "@/domain/case";
 import type { Owner } from "@/domain/owner";
@@ -56,8 +54,6 @@ type Step = {
   icon: typeof Cat;
 };
 
-type FieldErrorKey = "owner.name" | "owner.email" | "pet.name" | "pet.gender" | "lostDate" | "lost_place.city";
-
 const steps: Step[] = [
   {
     title: "Start here",
@@ -70,6 +66,11 @@ const steps: Step[] = [
     icon: User,
   },
   {
+    title: "Add photos",
+    description: "Photo URLs for the case.",
+    icon: Camera,
+  },
+  {
     title: "Cat basics",
     description: "Core pet schema fields.",
     icon: PawPrint,
@@ -78,11 +79,6 @@ const steps: Step[] = [
     title: "Last seen",
     description: "Case time and place.",
     icon: Calendar,
-  },
-  {
-    title: "Add photos",
-    description: "Photo URLs for the case.",
-    icon: Camera,
   },
   {
     title: "Appearance",
@@ -112,7 +108,7 @@ const steps: Step[] = [
 ];
 
 const sizeOptions: Size[] = ["small", "medium", "large"];
-const genderOptions: Pet["gender"][] = ["female", "male"];
+const genderOptions: NonNullable<Pet["gender"]>[] = ["female", "male"];
 const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
 const yesNoOptions = ["Yes", "No"];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,9 +122,9 @@ const catBreedOptions = Object.values(CAT_BREEDS_BY_GROUP)
 const progressLabels = [
   "Missing cat",
   "Contact added",
+  "Photos added",
   "Cat basics added",
   "Last seen added",
-  "Photos added",
   "Appearance added",
   "Health info added",
   "ID details added",
@@ -316,7 +312,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       }
     }
 
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       if (!pet.name?.trim()) {
         nextFieldErrors["pet.name"] = "Please add your cat's name.";
       }
@@ -326,7 +322,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       }
     }
 
-    if (currentStep === 3) {
+    if (currentStep === 4) {
       if (!lostDate) {
         nextFieldErrors.lostDate = "Please add the date your cat was last seen.";
       }
@@ -373,6 +369,48 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     }
 
     setSubmitted(true);
+  }
+
+  async function uploadPhotos(files: File[]) {
+    if (!files.length) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError("");
+
+    try {
+      for (const file of files) {
+        const uploadResponse = await fetch(`/api/cases/${encodeURIComponent(petCase.id)}/photo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            base64Image: await readFileAsDataUrl(file),
+          }),
+        });
+
+        if (!uploadResponse.ok) {
+          setError(await getIntakeErrorMessage(uploadResponse));
+          return;
+        }
+      }
+
+      const caseResponse = await fetch(`/api/cases/${encodeURIComponent(petCase.id)}`);
+      if (!caseResponse.ok) {
+        setError(await getIntakeErrorMessage(caseResponse));
+        return;
+      }
+
+      const body = await caseResponse.json() as { case?: Case };
+      if (body.case) {
+        setPetCase(body.case);
+        setBreedSearch(formatCatOption(body.case.pet?.breed ?? ""));
+      }
+    } catch {
+      setError("We couldn't upload this photo. Please check your connection and try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function startOver() {
@@ -481,30 +519,14 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         </div>
         {error ? <p className="mt-4 rounded-full bg-red-50 px-4 py-2 text-sm font-bold text-red-600">{error}</p> : null}
       </CardContent>
-      {currentStep > 0 ? (
-        <CardFooter className="flex items-center justify-between gap-3 bg-white p-5 pt-1 sm:p-6 sm:pt-1">
-          <Button
-            variant="outline"
-            className="h-12 rounded-full border-[#eadfD1] bg-white px-5 text-[#74675d]"
-            onClick={goBack}
-            disabled={isSaving}
-          >
-            <ChevronLeft className="size-4" />
-            Back
-          </Button>
-          {currentStep === steps.length - 1 ? (
-            <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={createCasePreview} disabled={isSaving}>
-              {isSaving ? "Saving" : "Create case"}
-              <CheckCircle2 className="size-4" />
-            </Button>
-          ) : (
-            <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
-              {isSaving ? "Saving" : "Continue"}
-              <ChevronRight className="size-4" />
-            </Button>
-          )}
-        </CardFooter>
-      ) : null}
+      <FormNavigation
+        currentStep={currentStep}
+        stepsLength={steps.length}
+        isSaving={isSaving}
+        onBack={goBack}
+        onNext={goNext}
+        onCreate={createCasePreview}
+      />
     </Card>
   );
 
@@ -513,178 +535,55 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       case 0:
         return <WelcomeStep isSaving={isSaving} onStart={goNext} />;
       case 1:
-        return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <Field label="Your name" required error={fieldErrors["owner.name"]}>
-                <Input value={petCase.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" aria-invalid={Boolean(fieldErrors["owner.name"])} />
-              </Field>
-              <Field label="Email" required error={fieldErrors["owner.email"]}>
-                <Input type="email" value={petCase.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors["owner.email"])} />
-              </Field>
-            </TwoColumnFields>
-            <Field label="Phone number">
-              <Input value={petCase.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional, e.g. +1 555 123 4567" />
-            </Field>
-          </div>
-        );
+        return <OwnerStep petCase={petCase} fieldErrors={fieldErrors} updateOwner={updateOwner} />;
       case 2:
-        return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <Field label="Cat name" required error={fieldErrors["pet.name"]}>
-                <Input value={pet.name ?? ""} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" aria-invalid={Boolean(fieldErrors["pet.name"])} />
-              </Field>
-              <Field label="Gender" required error={fieldErrors["pet.gender"]}>
-                <OptionGroup options={genderOptions} value={pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
-              </Field>
-            </TwoColumnFields>
-            <Field label="Breed">
-              <Select value={selectedBreedLabel} onValueChange={updateBreed}>
-                <SelectTrigger className="h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm" disabled={isUnknownBreed}>
-                  <SelectValue placeholder="Search breed, e.g. Siamese" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72 rounded-[1.25rem] bg-white p-2">
-                  <div className="sticky top-0 z-10 bg-white p-1">
-                    <Input value={breedSearch} onChange={(event) => updateBreedSearch(event.target.value)} placeholder="Search breed" />
-                  </div>
-                  {visibleBreedOptions.length ? (
-                    visibleBreedOptions.map((breed) => (
-                      <SelectItem key={breed.value} value={breed.label} className="rounded-xl px-3 py-2 text-[#2d251f]">
-                        {breed.label}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <p className="px-3 py-2 text-sm font-medium text-[#74675d]">No breeds found.</p>
-                  )}
-                </SelectContent>
-              </Select>
-              <label className="flex items-center gap-2 text-sm font-semibold text-[#74675d]">
-                <Checkbox checked={isUnknownBreed} onCheckedChange={(checked) => updateUnknownBreed(checked === true)} />
-                I don&apos;t know
-              </label>
-            </Field>
-          </div>
-        );
+        return <PhotosStep pet={pet} updatePet={updatePet} uploadPhotos={uploadPhotos} />;
       case 3:
         return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <Field label="Date last seen" required error={fieldErrors.lostDate}>
-                <Input type="date" value={lostDate} onChange={(event) => updateLostDate(event.target.value)} aria-invalid={Boolean(fieldErrors.lostDate)} />
-              </Field>
-              <Field label="Approximate time">
-                <Input type="time" value={lostTime} onChange={(event) => updateLostTime(event.target.value)} />
-              </Field>
-            </TwoColumnFields>
-            <TwoColumnFields>
-              <Field label="Country">
-                <Input value={lostPlace.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="US" />
-              </Field>
-              <Field label="City" required error={fieldErrors["lost_place.city"]}>
-                <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" aria-invalid={Boolean(fieldErrors["lost_place.city"])} />
-              </Field>
-            </TwoColumnFields>
-            <TwoColumnFields>
-              <Field label="Region">
-                <Input value={lostPlace.region ?? ""} onChange={(event) => updateLostPlace("region", event.target.value)} placeholder="NY" />
-              </Field>
-              <Field label="District or neighborhood">
-                <Input value={lostPlace.district ?? ""} onChange={(event) => updateLostPlace("district", event.target.value)} placeholder="Park Slope" />
-              </Field>
-            </TwoColumnFields>
-            <Field label="Full address or landmark">
-              <Input value={lostPlace.full_address ?? ""} onChange={(event) => updateLostPlace("full_address", event.target.value)} placeholder="Near 5th Ave and 9th St" />
-            </Field>
-          </div>
+          <CatBasicsStep
+            pet={pet}
+            fieldErrors={fieldErrors}
+            genderOptions={genderOptions}
+            selectedBreedLabel={selectedBreedLabel}
+            breedSearch={breedSearch}
+            visibleBreedOptions={visibleBreedOptions}
+            isUnknownBreed={isUnknownBreed}
+            updatePet={updatePet}
+            updateBreed={updateBreed}
+            updateBreedSearch={updateBreedSearch}
+            updateUnknownBreed={updateUnknownBreed}
+          />
         );
       case 4:
         return (
-          <div className="space-y-5">
-            <Label htmlFor="photos">Choose cat photos</Label>
-            <label htmlFor="photos" className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-amber-300 bg-white/80 p-6 text-center transition hover:bg-amber-50">
-              <Camera className="mb-3 size-9 text-amber-700" />
-              <span className="font-semibold text-stone-900">Pick photos</span>
-              <span className="mt-1 text-sm text-stone-500">File names are saved as photo URLs for now.</span>
-            </label>
-            <Input
-              id="photos"
-              type="file"
-              accept="image/*"
-              multiple
-              className="sr-only"
-              onChange={(event) => updatePet("photo_urls", Array.from(event.target.files ?? []).map((file) => file.name))}
-            />
-            {pet.photo_urls.length ? (
-              <div className="flex flex-wrap gap-2">
-                {pet.photo_urls.map((photo) => (
-                  <Badge key={photo} variant="outline" className="h-7 rounded-full bg-white px-3 text-stone-700">
-                    {photo}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-stone-500">Optional, but helpful.</p>
-            )}
-          </div>
+          <LastSeenStep
+            lostDate={lostDate}
+            lostTime={lostTime}
+            lostPlace={lostPlace}
+            fieldErrors={fieldErrors}
+            updateLostDate={updateLostDate}
+            updateLostTime={updateLostTime}
+            updateLostPlace={updateLostPlace}
+          />
         );
       case 5:
-        return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <OptionGroup label="Size" options={sizeOptions} value={pet.size ?? ""} onSelect={(value) => updatePet("size", value as Size)} />
-              <OptionGroup label="Age group" options={ageGroupOptions} value={pet.age_group ?? ""} onSelect={(value) => updatePet("age_group", value as NonNullable<Pet["age_group"]>)} />
-            </TwoColumnFields>
-            <Field label="Age in years">
-              <Input type="number" min="0" value={pet.age_years?.toString() ?? ""} onChange={(event) => updatePet("age_years", event.target.value ? Number(event.target.value) : undefined)} placeholder="3" />
-            </Field>
-            <Field label="Appearance">
-              <Textarea value={pet.appearance ?? ""} onChange={(event) => updatePet("appearance", event.target.value)} placeholder="Gray tabby, white chest, long fur..." />
-            </Field>
-            <Field label="Description">
-              <Textarea value={pet.description ?? ""} onChange={(event) => updatePet("description", event.target.value)} placeholder="Responds to treats, shy with strangers..." />
-            </Field>
-          </div>
-        );
+        return <AppearanceStep pet={pet} sizeOptions={sizeOptions} ageGroupOptions={ageGroupOptions} updatePet={updatePet} />;
       case 6:
-        return (
-          <div className="space-y-5">
-            <Field label="Health info">
-              <Textarea value={pet.health_info ?? ""} onChange={(event) => updatePet("health_info", event.target.value)} placeholder="Medication, blind, elderly, injured..." />
-            </Field>
-            <Field label="Behavior">
-              <Textarea value={pet.behavior ?? ""} onChange={(event) => updatePet("behavior", event.target.value)} placeholder="Friendly, scared, may run, do not chase..." />
-            </Field>
-            <Field label="Unique details">
-              <Textarea value={pet.unique_details ?? ""} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
-            </Field>
-          </div>
-        );
+        return <HealthBehaviorStep pet={pet} updatePet={updatePet} />;
       case 7:
         return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <OptionGroup label="Microchipped" options={yesNoOptions} value={booleanToYesNo(pet.chipped)} onSelect={(value) => updatePet("chipped", yesNoToBoolean(value))} />
-              <OptionGroup label="Wearing collar" options={yesNoOptions} value={booleanToYesNo(pet.collar)} onSelect={(value) => updatePet("collar", yesNoToBoolean(value))} />
-            </TwoColumnFields>
-            <Field label="Chip number">
-              <Input value={pet.chip_number ?? ""} onChange={(event) => updatePet("chip_number", event.target.value)} placeholder="Optional" />
-            </Field>
-          </div>
+          <IdDetailsStep
+            pet={pet}
+            yesNoOptions={yesNoOptions}
+            booleanToYesNo={booleanToYesNo}
+            yesNoToBoolean={yesNoToBoolean}
+            updatePet={updatePet}
+          />
         );
       case 8:
-        return (
-          <div className="space-y-5">
-            <Field label="Reward">
-              <Input value={petCase.reward ?? ""} onChange={(event) => updateReward(event.target.value)} placeholder="No reward, reward offered, or amount" />
-            </Field>
-            <p className="rounded-2xl bg-white/80 p-4 text-sm text-stone-600">
-              This is optional and maps directly to the case reward field.
-            </p>
-          </div>
-        );
+        return <RewardStep petCase={petCase} updateReward={updateReward} />;
       default:
-        return <ReviewStep petCase={petCase} />;
+        return <ReviewStep petCase={petCase} pet={pet} lostPlace={lostPlace} />;
     }
   }
 }
@@ -716,6 +615,23 @@ function createIntakeId() {
 
 function createTimestamp() {
   return new Date().toISOString() as Case["created_at"];
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.addEventListener("load", () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Unable to read photo."));
+    });
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("Unable to read photo.")));
+    reader.readAsDataURL(file);
+  });
 }
 
 function createEmptyCase(): Case {
@@ -816,135 +732,4 @@ function rewriteToHomeUrl() {
   if (window.location.pathname !== "/") {
     window.history.replaceState(null, "", "/");
   }
-}
-
-function WelcomeStep({ isSaving, onStart }: { isSaving: boolean; onStart: () => void }) {
-  return (
-    <div className="grid gap-4">
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#fff2d0] px-3 py-1 text-sm font-bold text-[#7a4b21]">
-          <Heart className="size-4" />
-          Stay hopeful
-        </div>
-        <p className="mt-4 text-2xl font-black leading-tight text-[#2d251f]">
-          A clear post helps people find beloved pet faster.
-        </p>
-      </div>
-      <Button className="mt-5 h-20 rounded-[1.5rem] bg-[#2d251f] text-xl font-black text-white shadow-lg shadow-[#d9b28b]/40 hover:bg-[#46382f]" onClick={onStart} disabled={isSaving}>
-        Start
-        <ChevronRight className="size-6" />
-      </Button>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="font-bold text-[#2d251f]">
-        {label} {required ? <span className="text-red-500">*</span> : null}
-      </Label>
-      {children}
-      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
-    </div>
-  );
-}
-
-function TwoColumnFields({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-5 sm:grid-cols-2">{children}</div>;
-}
-
-function OptionGroup({
-  label,
-  options,
-  value,
-  onSelect,
-}: {
-  label?: string;
-  options: string[];
-  value: string;
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      {label ? <Label className="font-bold text-[#2d251f]">{label}</Label> : null}
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <Button
-            key={option}
-            type="button"
-            variant={value === option ? "default" : "outline"}
-            className={`h-11 rounded-full px-4 font-bold ${value === option ? "bg-[#2d251f] text-white" : "border-0 bg-white text-[#74675d]"}`}
-            onClick={() => onSelect(option)}
-          >
-            {option}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReviewStep({ petCase }: { petCase: Case }) {
-  const pet = petCase.pet ?? createEmptyPet();
-  const lostPlace = petCase.lost_place ?? createEmptyAddress();
-  const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-[2rem] bg-white p-5 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-black text-[#d07b47]">Preview</p>
-            <h3 className="mt-1 text-3xl font-black text-[#2d251f]">
-              {pet.name || "Unnamed cat"}
-            </h3>
-            <p className="mt-1 font-medium text-[#74675d]">
-              Last seen {lostDate || "date unknown"} in {lostPlace.district || "area unknown"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
-            </p>
-          </div>
-          <Cat className="size-10 text-[#d07b47]" />
-        </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ReviewCard title="Owner" items={[petCase.owner.name, petCase.owner.email, petCase.owner.phone_number ?? ""]} />
-        <ReviewCard title="Pet" items={[pet.breed, pet.breed_group, pet.gender, pet.size ?? ""]} />
-        <ReviewCard title="Details" items={[pet.appearance ?? "", pet.description ?? "", pet.unique_details ?? ""]} />
-        <ReviewCard title="Safety" items={[pet.health_info ?? "", pet.behavior ?? ""]} />
-      </div>
-      <Separator className="bg-[#eadfd1]" />
-      <p className="text-sm font-medium text-[#74675d]">Saved after each completed schema step.</p>
-    </div>
-  );
-}
-
-function ReviewCard({ title, items }: { title: string; items: string[] }) {
-  const visibleItems = items.filter(Boolean);
-
-  return (
-    <div className="rounded-[1.5rem] bg-white p-4 shadow-sm">
-      <h4 className="font-black text-[#2d251f]">{title}</h4>
-      {visibleItems.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {visibleItems.map((item) => (
-            <Badge key={item} variant="secondary" className="h-auto rounded-full bg-[#f4eee6] px-3 py-1 text-[#74675d]">
-              {item}
-            </Badge>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-[#74675d]">Empty.</p>
-      )}
-    </div>
-  );
 }

@@ -35,7 +35,6 @@ Respond only with valid JSON according to the schema and nothing else.
 `
         const response = await this.ai.recognizeImage({
             base64Image,
-            mediaType: "image/jpeg",
             prompt,
         })
 
