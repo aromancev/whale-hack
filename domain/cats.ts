@@ -1,4 +1,5 @@
-import {Pet} from "./pets.js"
+import { z } from "zod";
+import { PetSchema } from "./pets.js";
 
 export const CAT_BREEDS_BY_GROUP = {
     flat_face_fluffy: [
@@ -125,7 +126,25 @@ export const CAT_BREED_TO_GROUP = {
     domestic_longhair: 'classic_house_cat',
 } as const satisfies Record<CatBreed, CatBreedGroup>
 
-export type Cat<Group extends CatBreedGroup = CatBreedGroup> = Pet & {
-    breed_group: Group,
-    breed: CatBreedForGroup<Group>,
-}
+const catBreedGroups = Object.keys(CAT_BREEDS_BY_GROUP) as [CatBreedGroup, ...CatBreedGroup[]];
+const catBreeds = Object.values(CAT_BREEDS_BY_GROUP).flat() as [CatBreed, ...CatBreed[]];
+
+export const CatBreedGroupSchema = z.enum(catBreedGroups);
+export const CatBreedSchema = z.enum(catBreeds);
+
+export const CatSchema = PetSchema.extend({
+    breed_group: CatBreedGroupSchema,
+    breed: CatBreedSchema,
+}).superRefine((cat, ctx) => {
+    if (CAT_BREED_TO_GROUP[cat.breed] === cat.breed_group) {
+        return;
+    }
+
+    ctx.addIssue({
+        code: "custom",
+        path: ["breed"],
+        message: `Breed '${cat.breed}' does not belong to breed group '${cat.breed_group}'`,
+    });
+});
+
+export type Cat = z.infer<typeof CatSchema>;

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { createAnthropicAiCapabilities } from "./ai";
+import { PetSchema } from "@/domain/pets";
+
+const petJSONSchema = JSON.stringify(z.toJSONSchema(PetSchema), null, 2);
 
 describe("aiCapabilities", () => {
   it("recognizes a pet image for manual prompt refinement", { tags: ["external"] }, async () => {
@@ -8,15 +12,11 @@ describe("aiCapabilities", () => {
     const prompt = `
 You are helping identify a lost pet from an uploaded image.
 
-Return concise JSON with these fields:
-- species: cat, dog, or unknown
-- breed: best guess, or unknown
-- breed_group: broader grouping when useful, or unknown
-- gender: visible sex only when confidently identifiable, otherwise unknown
-- distinguishing_features: short array of visible marks, colors, or traits
-- confidence: low, medium, or high
+Fill in as much of the schema as possible from the image.
 
-Do not invent information that is not visible in the image.
+Schema: ${petJSONSchema}
+
+Return only valid JSON and nothing else.
 `.trim();
 
     const result = await ai.recognizeImage({
