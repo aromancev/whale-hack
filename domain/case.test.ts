@@ -109,6 +109,18 @@ describe("petCaseRepository", () => {
     expect(CaseSchema.safeParse({ ...petCase, lost_time: "not-a-date" }).success).toBe(false);
   });
 
+  it("normalizes country values when parsing cases", () => {
+    const petCase = {
+      ...createCase("case-1"),
+      lost_place: {
+        country: " NL ",
+        city: "Amsterdam",
+      },
+    };
+
+    expect(CaseSchema.parse(petCase).lost_place?.country).toBe("nl");
+  });
+
   it("generates a default id when one is not provided", () => {
     const petCaseWithoutId: Partial<Case> = createCase("case-1");
     delete petCaseWithoutId.id;

@@ -652,7 +652,7 @@ function createEmptyPet(): Pet {
 
 function createEmptyAddress(): Address {
   return {
-    country: "",
+    country: "nl",
     city: "",
     region: "",
     district: "",

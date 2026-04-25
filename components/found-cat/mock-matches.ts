@@ -2,10 +2,8 @@ import type { MatchCandidate } from "./types";
 
 export const MOCK_MATCHES: MatchCandidate[] = [
   {
-    caseId: "b9da1c91-be03-4475-828c-87d253906ac1",
+    caseId: "6e7cb218-63c7-4231-a7f2-3df91bbbeb79",
     name: "Mis",
-    photoUrl:
-      "/uploads/cases/b9da1c91-be03-4475-828c-87d253906ac1/photos/4ebbc9da-8abe-44b2-bb0a-dd54c450f361.jpg",
     matchPercent: 92,
     city: "Duiv",
     lostDate: "Apr 23, 2026",
