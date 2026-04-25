@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fetch:cats": "node scripts/fetch-amivedi-cats.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.3",
