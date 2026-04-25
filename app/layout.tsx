@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Found Together | Missing Cat Intake",
+  title: "Find Together | Missing Cat Intake",
   description: "Create a calm, guided missing cat case preview.",
 };
 

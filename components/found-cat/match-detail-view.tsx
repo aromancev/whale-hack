@@ -3,7 +3,6 @@
 import { ArrowRight, ChevronLeft, MapPin } from "lucide-react";
 import Link from "next/link";
 import { MatchPhoto } from "./match-photo";
-import { MatchPercent } from "./match-percent";
 import type { MatchCandidate } from "./types";
 
 export function MatchDetailView({
@@ -31,7 +30,6 @@ export function MatchDetailView({
       ) : null}
 
       <div className="mt-5 flex items-center gap-4">
-        <MatchPercent percent={match.matchPercent} size="lg" />
         <div>
           <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl">
             {match.name}

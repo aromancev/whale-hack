@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { HomeButton } from "@/components/home-button";
 import { PublicCaseEmailButton } from "@/components/public-case-email-button";
 import { CaseSchema, type Address, type Case } from "@/domain/case";
@@ -32,12 +33,15 @@ export default async function PublicCasePage({
       <section className="relative mx-auto max-w-4xl pt-16 sm:pt-20">
         <div className="overflow-hidden rounded-[2rem] border-2 border-[#e8d7be] bg-white/85 shadow-[0_18px_0_#e7b888]">
           {photoUrl ? (
-            <div
-              aria-label={`${petName} photo`}
-              className="h-72 bg-[#f3fbf5] bg-contain bg-center bg-no-repeat sm:h-96"
-              role="img"
-              style={{ backgroundImage: `url(${photoUrl})` }}
-            />
+            <div className="p-4 sm:p-5">
+              <div className="flex h-72 items-center justify-center rounded-[1.5rem] bg-[#f3fbf5] sm:h-96">
+                <img
+                  alt={`${petName} photo`}
+                  className="max-h-full max-w-full rounded-[1.25rem] object-contain"
+                  src={photoUrl}
+                />
+              </div>
+            </div>
           ) : (
             <div className="flex h-56 flex-col items-center justify-center gap-3 bg-[#f3fbf5] text-[#8ebaa5] sm:h-72">
               <Cat className="size-20" />

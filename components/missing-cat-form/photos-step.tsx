@@ -14,7 +14,7 @@ export function PhotosStep({ pet, updatePet, uploadPhotos }: { pet: Pet; updateP
       <label htmlFor="photos" className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-amber-300 bg-white/80 p-6 text-center transition hover:bg-amber-50">
         <Camera className="mb-3 size-9 text-amber-700" />
         <span className="font-semibold text-stone-900">Pick photos</span>
-        <span className="mt-1 text-sm text-stone-500">File names are saved as photo URLs for now.</span>
+        <span className="mt-1 text-sm text-stone-500"></span>
       </label>
       <Input
         id="photos"
@@ -37,7 +37,7 @@ export function PhotosStep({ pet, updatePet, uploadPhotos }: { pet: Pet; updateP
           ))}
         </div>
       ) : (
-        <p className="text-sm text-stone-500">Optional, but helpful.</p>
+        <p className="text-sm text-stone-500">Add at least one clear photo: JPG, PNG, JPEG</p>
       )}
     </div>
   );

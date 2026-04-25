@@ -13,7 +13,7 @@ export default function Home() {
 
       <section className="relative z-10 flex w-full max-w-5xl flex-col justify-center py-10 sm:py-16 lg:py-24">
         <p className="mb-5 w-fit rounded-full bg-white/75 px-4 py-2 text-sm font-bold tracking-wide text-[#7b563e] shadow-sm ring-1 ring-[#efd8bd]">
-          Found Together
+          Find Together
         </p>
 
         <h1 className="max-w-3xl text-5xl font-black leading-[0.9] tracking-tight sm:text-7xl lg:text-8xl">
@@ -22,7 +22,7 @@ export default function Home() {
 
         <p className="mt-6 max-w-xl text-lg font-medium leading-8 text-[#74675d] sm:text-xl">
           Start with one simple choice. We&apos;ll help turn panic into a clear
-          next step.
+          next steps.
         </p>
 
         <div className="mt-10 grid max-w-3xl gap-4 sm:grid-cols-2 sm:gap-5">

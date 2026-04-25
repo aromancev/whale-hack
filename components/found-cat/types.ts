@@ -5,7 +5,6 @@ export type MatchCandidate = {
   caseId: string;
   name: string;
   photoUrl?: string;
-  matchPercent: number;
   city: string;
   lostDate: string;
   breed: string;

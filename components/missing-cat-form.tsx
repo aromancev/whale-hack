@@ -33,7 +33,7 @@ import { OwnerStep } from "@/components/missing-cat-form/owner-step";
 import { PhotosStep } from "@/components/missing-cat-form/photos-step";
 import { ReviewStep } from "@/components/missing-cat-form/review-step";
 import { RewardStep } from "@/components/missing-cat-form/reward-step";
-import type { FieldErrorKey } from "@/components/missing-cat-form/types";
+import type { FieldErrorKey, UpdateLostPlaceFromMap } from "@/components/missing-cat-form/types";
 import { WelcomeStep } from "@/components/missing-cat-form/welcome-step";
 import { CAT_BREEDS_BY_GROUP, CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
 import { type Address, type Case, CaseSchema } from "@/domain/case";
@@ -60,42 +60,42 @@ type Step = {
 const steps: Step[] = [
   {
     title: "Start here",
-    description: "Every detail brings them closer.",
+    description: "Every detail brings them closer",
     icon: Cat,
   },
   {
     title: "Your contact",
-    description: "Owner details first.",
+    description: "Owner details first",
     icon: User,
   },
   {
     title: "Add photos",
-    description: "Photo URLs for the case.",
+    description: "More photos, more chances",
     icon: Camera,
   },
   {
-    title: "Cat basics",
-    description: "Core pet schema fields.",
+    title: "Cat details",
+    description: "Add name, gender, and breed",
     icon: PawPrint,
   },
   {
     title: "Last seen",
-    description: "Case time and place.",
+    description: "Share location and time when last seen",
     icon: Calendar,
   },
   {
     title: "Appearance",
-    description: "Structured pet details.",
+    description: "Add color, unique details, and more",
     icon: Sparkles,
   },
   {
     title: "Health and behavior",
-    description: "Useful search context.",
+    description: "Add insights about health and behavior",
     icon: BadgeCheck,
   },
   {
     title: "Reward",
-    description: "Optional case reward.",
+    description: "Optional case reward",
     icon: Heart,
   },
   {
@@ -131,6 +131,7 @@ const progressLabels = [
 export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const [petCase, setPetCase] = useState<Case>(() => initialCase ?? createEmptyCase());
   const [breedSearch, setBreedSearch] = useState(() => formatCatOption(initialCase?.pet?.breed ?? ""));
+  const [lostTime, setLostTime] = useState(() => getLostTimeInput(initialCase?.lost_time));
   const [currentStep, setCurrentStep] = useState(() => initialCase ? 2 : 0);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
@@ -149,11 +150,10 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const pet = petCase.pet ?? createEmptyPet();
   const lostPlace = petCase.lost_place ?? createEmptyAddress();
   const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
-  const lostTime = petCase.lost_time ? petCase.lost_time.slice(11, 16) : "";
   const isUnknownBreed = pet.breed === unknownBreed && pet.breed_group === CAT_BREED_TO_GROUP[unknownBreed];
   const selectedBreed = findCatBreed(pet.breed);
   const selectedBreedLabel = selectedBreed ? formatCatOption(selectedBreed) : null;
-  const visibleBreedOptions = catBreedOptions.filter((breed) => breed.label.toLowerCase().includes(breedSearch.trim().toLowerCase()));
+  const visibleBreedOptions = catBreedOptions.filter((breed) => breedMatchesSearch(breed.label, breedSearch));
 
   function updateReward(value: string) {
     setPetCase((current) => ({
@@ -220,7 +220,6 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       return;
     }
 
-    setBreedSearch(formatCatOption(selectedValue));
     setPetCase((current) => ({
       ...current,
       updated_at: createTimestamp(),
@@ -278,6 +277,23 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     setError("");
   }
 
+  const updateLostPlaceFromMap: UpdateLostPlaceFromMap = (place) => {
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      lost_place: {
+        ...(current.lost_place ?? createEmptyAddress()),
+        ...removeEmptyMapPlaceFields(place),
+      },
+    }));
+
+    if (place.city?.trim()) {
+      clearFieldError("lost_place.city");
+    }
+
+    setError("");
+  };
+
   function updateLostDate(value: string) {
     setPetCase((current) => ({
       ...current,
@@ -289,6 +305,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   }
 
   function updateLostTime(value: string) {
+    setLostTime(value);
     setPetCase((current) => ({
       ...current,
       updated_at: createTimestamp(),
@@ -409,6 +426,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       const parsed = caseResponseSchema.safeParse(await caseResponse.json());
       if (parsed.success) {
         setPetCase(parsed.data.case);
+        setLostTime(getLostTimeInput(parsed.data.case.lost_time));
         setBreedSearch(formatCatOption(parsed.data.case.pet?.breed ?? ""));
       } else {
         setError("We received an unexpected response from the server.");
@@ -422,6 +440,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
 
   function startOver() {
     setPetCase(createEmptyCase());
+    setLostTime("");
     setCurrentStep(0);
     setFieldErrors({});
     setError("");
@@ -582,6 +601,7 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
             updateLostDate={updateLostDate}
             updateLostTime={updateLostTime}
             updateLostPlace={updateLostPlace}
+            updateLostPlaceFromMap={updateLostPlaceFromMap}
           />
         );
       case 5:
@@ -684,6 +704,12 @@ function createEmptyAddress(): Address {
   };
 }
 
+function removeEmptyMapPlaceFields(place: Partial<Address> & { coordinates: NonNullable<Address["coordinates"]> }) {
+  return Object.fromEntries(
+    Object.entries(place).filter(([, value]) => value !== undefined && value !== ""),
+  ) as Partial<Address> & { coordinates: NonNullable<Address["coordinates"]> };
+}
+
 function rewriteToPublicCaseUrl(caseId: string) {
   const casePath = `/public-case/${encodeURIComponent(caseId)}`;
 
@@ -700,6 +726,12 @@ function createLostTime(date: string, time: string) {
   return toISODateTimeString(`${date}T${time || "00:00"}`);
 }
 
+function getLostTimeInput(value?: string) {
+  const time = value?.slice(11, 16) ?? "";
+
+  return time === "00:00" ? "" : time;
+}
+
 function formatCatOption(value: string) {
   return value
     .split("_")
@@ -713,6 +745,38 @@ function findCatBreed(value: string) {
   const option = catBreedOptions.find((breed) => breed.label.toLowerCase() === normalizedValue || breed.value === normalizedValue);
 
   return option?.value;
+}
+
+function breedMatchesSearch(label: string, search: string) {
+  const normalizedSearch = normalizeBreedSearchText(search);
+
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const normalizedLabel = normalizeBreedSearchText(label);
+
+  if (normalizedLabel.includes(normalizedSearch)) {
+    return true;
+  }
+
+  let searchIndex = 0;
+
+  for (const symbol of normalizedLabel) {
+    if (symbol === normalizedSearch[searchIndex]) {
+      searchIndex += 1;
+    }
+
+    if (searchIndex === normalizedSearch.length) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function normalizeBreedSearchText(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function rewriteToCaseUrl(caseId: string) {

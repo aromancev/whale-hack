@@ -9,3 +9,5 @@ export type UpdateOwner = <Key extends keyof Owner>(key: Key, value: Owner[Key])
 export type UpdatePet = <Key extends keyof Pet>(key: Key, value: Pet[Key]) => void;
 
 export type UpdateLostPlace = (key: keyof Omit<Address, "coordinates">, value: string) => void;
+
+export type UpdateLostPlaceFromMap = (place: Partial<Address> & { coordinates: NonNullable<Address["coordinates"]> }) => void;

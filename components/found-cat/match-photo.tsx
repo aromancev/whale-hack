@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Cat } from "lucide-react";
 
 export function MatchPhoto({
@@ -10,7 +11,8 @@ export function MatchPhoto({
   size?: "md" | "lg";
 }) {
   const sizing = size === "lg" ? "h-44 w-full sm:h-56" : "size-16";
-  const fit = size === "lg" ? "bg-contain bg-no-repeat" : "bg-cover";
+  const spacing = size === "lg" ? "p-3" : "";
+  const imageSizing = size === "lg" ? "max-h-full max-w-full object-contain" : "h-full w-full object-cover";
 
   if (!photoUrl) {
     const iconSize = size === "lg" ? "size-16" : "size-8";
@@ -18,7 +20,7 @@ export function MatchPhoto({
     return (
       <span
         aria-label={`${name} photo placeholder`}
-        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-[#f3fbf5] text-[#8ebaa5] shadow-[0_5px_0_#dceadf] ${sizing}`}
+        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-[#f3fbf5] text-[#8ebaa5] shadow-[0_5px_0_#dceadf] ${spacing} ${sizing}`}
         role="img"
       >
         <Cat className={iconSize} />
@@ -28,10 +30,13 @@ export function MatchPhoto({
 
   return (
     <span
-      aria-label={`${name} photo`}
-      className={`block shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-center shadow-[0_5px_0_#dceadf] ${fit} ${sizing}`}
-      role="img"
-      style={{ backgroundImage: `url(${photoUrl})` }}
-    />
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-[#f3fbf5] shadow-[0_5px_0_#dceadf] ${spacing} ${sizing}`}
+    >
+      <img
+        alt={`${name} photo`}
+        className={`rounded-xl ${imageSizing}`}
+        src={photoUrl}
+      />
+    </span>
   );
 }
