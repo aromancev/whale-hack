@@ -1,11 +1,19 @@
 import { ISODateTimeString } from "@/platform/time"
 import { Pet } from "./pets"
+import { Owner } from "./owner"
 
+export type Sighting = {
+    place: Address,
+    time: ISODateTimeString,
+}
 
 export type Case = {
+    owner: Owner,
     pet: Pet,
     lost_time: ISODateTimeString,
-    lost_place: Address, 
+    lost_place: Address,
+    sightings: Sighting[],
+    reward?: string,
 }
 
 type Address = {
