@@ -8,4 +8,4 @@ export type UpdateOwner = <Key extends keyof Owner>(key: Key, value: Owner[Key])
 
 export type UpdatePet = <Key extends keyof Pet>(key: Key, value: Pet[Key]) => void;
 
-export type UpdateLostPlace = <Key extends keyof Omit<Address, "coordinates">>(key: Key, value: Address[Key]) => void;
+export type UpdateLostPlace = (key: keyof Omit<Address, "coordinates">, value: string) => void;

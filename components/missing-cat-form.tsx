@@ -48,7 +48,7 @@ type IntakeErrorResponse = {
   issues?: { path: string; message: string }[];
 };
 
-const intakeSuccessSchema = z.object({ id: z.string() });
+const intakeSuccessSchema = z.object({ case: CaseSchema });
 const caseResponseSchema = z.object({ case: CaseSchema });
 
 type Step = {
@@ -262,11 +262,15 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     setError("");
   }
 
-  function updateLostPlace<Key extends keyof Omit<Address, "coordinates">>(key: Key, value: Address[Key]) {
+  function updateLostPlace(key: keyof Omit<Address, "coordinates">, value: string) {
+    const nextValue = key === "country"
+      ? value.trim().toLowerCase()
+      : value;
+
     setPetCase((current) => ({
       ...current,
       updated_at: createTimestamp(),
-      lost_place: { ...(current.lost_place ?? createEmptyAddress()), [key]: value },
+      lost_place: { ...(current.lost_place ?? createEmptyAddress()), [key]: nextValue },
     }));
     if (key === "city") {
       clearFieldError("lost_place.city");
@@ -358,7 +362,12 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   }
 
   async function createCasePreview() {
-    const saveError = await persistCase();
+    const saveError = await persistCase({
+      ...petCase,
+      status: "open",
+      updated_at: createTimestamp(),
+    }, { rewriteUrl: false });
+
     if (saveError) {
       setError(saveError);
       return;
@@ -420,14 +429,14 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
     rewriteToHomeUrl();
   }
 
-  async function persistCase() {
+  async function persistCase(nextCase: Case = petCase, options: { rewriteUrl?: boolean } = {}) {
     setIsSaving(true);
 
     try {
       const response = await fetch("/api/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(petCase),
+        body: JSON.stringify(nextCase),
       });
 
       if (!response.ok) {
@@ -436,10 +445,18 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
 
       const savedCase = intakeSuccessSchema.safeParse(await response.json());
       if (savedCase.success) {
-        rewriteToCaseUrl(savedCase.data.id);
+        setPetCase(savedCase.data.case);
+
+        if (savedCase.data.case.status === "open") {
+          rewriteToPublicCaseUrl(savedCase.data.case.id);
+        } else if (options.rewriteUrl !== false) {
+          rewriteToCaseUrl(savedCase.data.case.id);
+        }
+
+        return "";
       }
 
-      return "";
+      return "We received an unexpected response from the server.";
     } catch {
       return "We couldn't save this step. Please check your connection and try again.";
     } finally {
@@ -455,18 +472,21 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
             <CheckCircle2 className="size-11" />
           </div>
           <CardTitle className="text-4xl font-black tracking-tight text-[#2d251f]">
-            Preview ready
+            Public case ready
           </CardTitle>
           <CardDescription className="max-w-xs text-base font-medium text-[#74675d]">
-            Saved to the case repository.
+            Your report is now live and ready to share.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-[2rem] bg-[#f0fbf5] p-5 text-sm font-medium text-[#245643]">
-            <span className="font-semibold">Preview case:</span> {pet.name || "Your cat"} last seen in {lostPlace.district || "your area"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
+            <span className="font-semibold">Public case:</span> {pet.name || "Your cat"} last seen in {lostPlace.district || "your area"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
           </div>
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={() => window.location.assign(`/public-case/${encodeURIComponent(petCase.id)}`)}>
+            View public case
+          </Button>
           <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={startOver}>
             Start another report
           </Button>
@@ -662,6 +682,14 @@ function createEmptyAddress(): Address {
     postal_code: "",
     full_address: "",
   };
+}
+
+function rewriteToPublicCaseUrl(caseId: string) {
+  const casePath = `/public-case/${encodeURIComponent(caseId)}`;
+
+  if (window.location.pathname !== casePath) {
+    window.history.replaceState(null, "", casePath);
+  }
 }
 
 function createLostTime(date: string, time: string) {

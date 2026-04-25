@@ -1,8 +1,6 @@
-import { describe, expect, it } from "vitest";
-import {
-  createInMemoryFileStorage,
-  createInMemoryKvStore,
-} from "@/platform/testing/in-memory-dependencies";
+import { describe, expect, it, vi } from "vitest";
+import type { KvStore } from "@/platform/kv-store";
+import { createInMemoryKvStore } from "@/platform/testing/in-memory-dependencies";
 import { CaseSchema, type Case } from "./case";
 import { PetCaseRepository } from "./case-repository";
 
@@ -92,14 +90,27 @@ describe("petCaseRepository", () => {
   });
 
   it("loads multiple cases in one batched read", async () => {
-    const repository = createTestRepository();
     const firstCase = createCase("case-1");
     const secondCase = createCase("case-2");
-
-    await repository.save(firstCase);
-    await repository.save(secondCase);
+    const getMany = vi.fn<KvStore["getMany"]>().mockResolvedValue([
+      JSON.stringify(firstCase),
+      JSON.stringify(secondCase),
+    ]);
+    const repository = new PetCaseRepository({
+      kv: {
+        get: vi.fn().mockResolvedValue(null),
+        getMany,
+        set: vi.fn().mockResolvedValue(undefined),
+        addToSet: vi.fn().mockResolvedValue(undefined),
+        removeFromSet: vi.fn().mockResolvedValue(undefined),
+        getSet: vi.fn().mockResolvedValue([]),
+        delete: vi.fn().mockResolvedValue(undefined),
+        has: vi.fn().mockResolvedValue(false),
+      },
+    });
 
     await expect(repository.getMany(["case-1", "case-2"])).resolves.toEqual([firstCase, secondCase]);
+    expect(getMany).toHaveBeenCalledWith(["pet-cases:item:case-1", "pet-cases:item:case-2"]);
   });
 
   it("validates cases with the zod schema", () => {
@@ -149,7 +160,6 @@ describe("petCaseRepository", () => {
 function createTestRepository() {
   return new PetCaseRepository({
     kv: createInMemoryKvStore(),
-    storage: createInMemoryFileStorage(),
   });
 }
 

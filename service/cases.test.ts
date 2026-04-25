@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Case } from "@/domain/case";
 import { PetCaseRepository } from "@/domain/case-repository";
-import {
-  createInMemoryFileStorage,
-  createInMemoryKvStore,
-} from "@/platform/testing/in-memory-dependencies";
+import { createInMemoryKvStore } from "@/platform/testing/in-memory-dependencies";
 import { CasesService } from "./cases";
 
 describe("CasesService", () => {
@@ -81,7 +78,6 @@ describe("CasesService", () => {
 function createTestService() {
   const repository = new PetCaseRepository({
     kv: createInMemoryKvStore(),
-    storage: createInMemoryFileStorage(),
   });
 
   return {

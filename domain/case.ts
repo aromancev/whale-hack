@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ISODateTimeString } from "@/platform/time";
+import type { ISODateTimeString } from "@/platform/time";
 import { OwnerSchema } from "./owner";
 import { PetSchema } from "./pets";
 

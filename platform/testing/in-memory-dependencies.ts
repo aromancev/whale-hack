@@ -15,6 +15,10 @@ export function createInMemoryKvStore(): KvStore {
       return values.get(key) ?? null;
     },
 
+    async getMany(keys) {
+      return keys.map((key) => values.get(key) ?? null);
+    },
+
     async set(key, value) {
       values.set(key, value);
     },

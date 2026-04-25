@@ -33,7 +33,7 @@ export function LastSeenStep({
       </TwoColumnFields>
       <TwoColumnFields>
         <Field label="Country">
-          <Input value={lostPlace.country.toUpperCase()} readOnly placeholder="NL" />
+          <Input value={lostPlace.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="nl" />
         </Field>
         <Field label="City" required error={fieldErrors["lost_place.city"]}>
           <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" aria-invalid={Boolean(fieldErrors["lost_place.city"])} />

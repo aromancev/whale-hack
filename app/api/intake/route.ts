@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const petCase = await casesService.save(result.data);
 
-  return Response.json({ id: petCase.id });
+  return Response.json({ case: petCase });
 }
 
 function formatValidationError(issues: { path: string; message: string }[]) {

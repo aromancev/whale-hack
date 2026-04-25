@@ -10,7 +10,8 @@
     "test": "vitest run --tagsFilter='!external'",
     "test:external": "vitest run --tagsFilter=external",
     "fetch:cats": "node scripts/fetch-amivedi-cats.mjs",
-    "parse:cats": "node scripts/parse-cats-to-cases.mjs"
+    "populate:cats": "tsx -- ./scripts/populate-cats.ts",
+    "purge:cats": "tsx -- ./scripts/purge-cases.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -36,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.5"
   }
