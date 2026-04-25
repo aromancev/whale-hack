@@ -1,47 +1,56 @@
 import { fileStorage, type FileStorage } from "@/platform/file-storage";
 import { kvStore, type KvStore } from "@/platform/kv-store";
 import { ISODateTimeString } from "@/platform/time";
-import { Owner } from "./owner";
-import { Pet } from "./pets";
+import { z } from "zod";
+import { OwnerSchema } from "./owner";
+import { PetSchema } from "./pets";
 
-export type Sighting = {
-  place: Address;
-  time: ISODateTimeString;
-};
+const isoDateTimeStringSchema = z.iso.datetime().transform((value) => value as ISODateTimeString);
 
-export type Case = {
-  id: string;
-  owner: Owner;
-  pet: Pet;
-  lost_time: ISODateTimeString;
-  lost_place: Address;
-  sightings: Sighting[];
-  created_at: ISODateTimeString;
-  updated_at: ISODateTimeString;
-  reward?: string;
-};
+export const AddressSchema = z.object({
+  country: z.string(),
+  city: z.string(),
+  region: z.string().optional(),
+  district: z.string().optional(),
+  street: z.string().optional(),
+  house_number: z.string().optional(),
+  apartment: z.string().optional(),
+  postal_code: z.string().optional(),
+  full_address: z.string().optional(),
+  coordinates: z
+    .object({
+      latitude: z.number(),
+      longitude: z.number(),
+    })
+    .optional(),
+});
+
+export const SightingSchema = z.object({
+  place: AddressSchema,
+  time: isoDateTimeStringSchema,
+});
+
+export const CaseSchema = z.object({
+  id: z.string(),
+  owner: OwnerSchema,
+  pet: PetSchema.optional(),
+  lost_time: isoDateTimeStringSchema.optional(),
+  lost_place: AddressSchema.optional(),
+  sightings: z.array(SightingSchema),
+  created_at: isoDateTimeStringSchema,
+  updated_at: isoDateTimeStringSchema,
+  reward: z.string().optional(),
+});
+
+export type Address = z.infer<typeof AddressSchema>;
+export type Sighting = z.infer<typeof SightingSchema>;
+export type Case = z.infer<typeof CaseSchema>;
 
 export type PetCaseRepository = {
   save(petCase: Case): Promise<Case>;
   get(id: string): Promise<Case | null>;
   list(): Promise<Case[]>;
   delete(id: string): Promise<void>;
-};
-
-type Address = {
-  country: string;
-  city: string;
-  region?: string;
-  district?: string;
-  street?: string;
-  house_number?: string;
-  apartment?: string;
-  postal_code?: string;
-  full_address?: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
 };
 
 const petCaseIndexKey = "pet-cases:index";
@@ -56,12 +65,14 @@ export function createPetCaseRepository(
 
   return {
     async save(petCase) {
-      await storage.put(casePathname(petCase.id), JSON.stringify(petCase), {
+      const validCase = CaseSchema.parse(petCase);
+
+      await storage.put(casePathname(validCase.id), JSON.stringify(validCase), {
         contentType: "application/json",
       });
-      await saveCaseId(kv, petCase.id);
+      await saveCaseId(kv, validCase.id);
 
-      return petCase;
+      return validCase;
     },
 
     get(id) {
@@ -89,7 +100,7 @@ async function getPetCase(storage: FileStorage, id: string) {
     return null;
   }
 
-  return JSON.parse(Buffer.from(storedFile.body).toString("utf8")) as Case;
+  return CaseSchema.parse(JSON.parse(Buffer.from(storedFile.body).toString("utf8")));
 }
 
 async function saveCaseId(kv: KvStore, id: string) {

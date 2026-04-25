@@ -3,7 +3,7 @@ import {
   createInMemoryFileStorage,
   createInMemoryKvStore,
 } from "@/platform/testing/in-memory-dependencies";
-import { createPetCaseRepository, type Case } from "./case";
+import { CaseSchema, createPetCaseRepository, type Case } from "./case";
 
 describe("petCaseRepository", () => {
   it("saves and loads a case", async () => {
@@ -47,6 +47,13 @@ describe("petCaseRepository", () => {
 
     await expect(repository.get("case-1")).resolves.toBeNull();
     await expect(repository.list()).resolves.toEqual([]);
+  });
+
+  it("validates cases with the zod schema", () => {
+    const petCase = createCase("case-1");
+
+    expect(CaseSchema.parse(petCase)).toEqual(petCase);
+    expect(CaseSchema.safeParse({ ...petCase, lost_time: "not-a-date" }).success).toBe(false);
   });
 });
 

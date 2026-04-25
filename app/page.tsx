@@ -1,5 +1,5 @@
 import { MissingCatForm } from "@/components/missing-cat-form";
-import { PawPrint } from "lucide-react";
+import { PawPrint, TriangleAlert } from "lucide-react";
 
 export default function Home() {
   return (
@@ -12,7 +12,8 @@ export default function Home() {
         <h1 className="text-5xl font-black leading-[0.95] tracking-tight sm:text-7xl">
           Let&apos;s find them together.
         </h1>
-        <span className="mt-4 inline-flex rounded-full bg-[#bfe8d5] px-3 py-1 text-xs font-bold text-[#245643]">
+        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#bfe8d5] px-3 py-1 text-xs font-bold text-[#245643]">
+          <TriangleAlert className="size-3.5" />
           Cats only
         </span>
         <div className="mx-auto mt-4 flex max-w-sm items-center justify-center gap-3 text-base font-medium leading-7 text-[#74675d]">

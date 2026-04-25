@@ -1,23 +1,29 @@
-export type Color = '' | '';
-export type Size = 'small' | 'medium' | 'large';
+import { z } from "zod";
 
-export type Pet = {
-    species: 'cat',
-    breed: string,
-    breed_group: string,
-    photo_urls: string[],
-    gender: 'male' | 'female',
-    age_years?: number,
-    age_group?: 'yong' | 'adult' | 'senior',
-    name?: string,
-    appearance?: string,
-    description?: string,
-    health_info?: string,
-    behavior?: string,
-    unique_details?: string,
-    chipped?: boolean,
-    chip_number?: string,
-    color?: Color,
-    collar?: boolean,
-    size?: Size,
-}
+export const ColorSchema = z.literal("");
+export const SizeSchema = z.enum(["small", "medium", "large"]);
+
+export const PetSchema = z.object({
+  species: z.literal("cat"),
+  breed: z.string(),
+  breed_group: z.string(),
+  photo_urls: z.array(z.string()),
+  gender: z.enum(["male", "female"]),
+  age_years: z.number().optional(),
+  age_group: z.enum(["yong", "adult", "senior"]).optional(),
+  name: z.string().optional(),
+  appearance: z.string().optional(),
+  description: z.string().optional(),
+  health_info: z.string().optional(),
+  behavior: z.string().optional(),
+  unique_details: z.string().optional(),
+  chipped: z.boolean().optional(),
+  chip_number: z.string().optional(),
+  color: ColorSchema.optional(),
+  collar: z.boolean().optional(),
+  size: SizeSchema.optional(),
+});
+
+export type Color = z.infer<typeof ColorSchema>;
+export type Size = z.infer<typeof SizeSchema>;
+export type Pet = z.infer<typeof PetSchema>;

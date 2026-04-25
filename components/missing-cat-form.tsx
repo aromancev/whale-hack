@@ -14,6 +14,7 @@ import {
   PawPrint,
   ShieldCheck,
   Sparkles,
+  TriangleAlert,
   User,
 } from "lucide-react";
 
@@ -32,40 +33,41 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import type { Address, Case } from "@/domain/case";
+import type { Owner } from "@/domain/owner";
+import type { Pet } from "@/domain/pets";
+import type { Size } from "@/domain/pets";
 
 type FormData = {
-  catName: string;
-  nickname: string;
-  lastSeenDate: string;
-  lastSeenTime: string;
-  city: string;
-  area: string;
-  landmark: string;
-  photos: string[];
-  breed: string;
-  mainColor: string;
-  secondaryColors: string;
-  size: string;
-  furLength: string;
-  markings: string[];
-  otherMarkings: string;
-  gender: string;
-  age: string;
-  spayedNeutered: string;
-  collar: string;
-  collarColor: string;
-  tags: string;
-  microchipped: string;
-  indoorOutdoor: string;
-  behavior: string[];
-  sightingInstructions: string;
-  ownerName: string;
-  email: string;
-  phone: string;
-  preferredContact: string;
-  medicalNeeds: string;
+  owner: Owner;
+  pet: {
+    species: "cat";
+    breed: string;
+    breed_group: string;
+    photo_urls: string[];
+    gender: "" | Pet["gender"];
+    age_years: string;
+    age_group: "" | NonNullable<Pet["age_group"]>;
+    name: string;
+    appearance: string;
+    description: string;
+    health_info: string;
+    behavior: string;
+    unique_details: string;
+    chipped: "" | "Yes" | "No";
+    chip_number: string;
+    collar: "" | "Yes" | "No";
+    size: "" | Size;
+  };
+  lostDate: string;
+  lostTime: string;
+  lost_place: Record<keyof Omit<Address, "coordinates">, string>;
   reward: string;
-  extraNotes: string;
+};
+
+type IntakeErrorResponse = {
+  error?: string;
+  issues?: { path: string; message: string }[];
 };
 
 type Step = {
@@ -75,38 +77,43 @@ type Step = {
 };
 
 const initialFormData: FormData = {
-  catName: "",
-  nickname: "",
-  lastSeenDate: "",
-  lastSeenTime: "",
-  city: "",
-  area: "",
-  landmark: "",
-  photos: [],
-  breed: "",
-  mainColor: "",
-  secondaryColors: "",
-  size: "",
-  furLength: "",
-  markings: [],
-  otherMarkings: "",
-  gender: "",
-  age: "",
-  spayedNeutered: "",
-  collar: "",
-  collarColor: "",
-  tags: "",
-  microchipped: "",
-  indoorOutdoor: "",
-  behavior: [],
-  sightingInstructions: "Take a photo, do not chase, and report the sighting.",
-  ownerName: "",
-  email: "",
-  phone: "",
-  preferredContact: "",
-  medicalNeeds: "",
+  owner: {
+    name: "",
+    email: "",
+  },
+  pet: {
+    species: "cat",
+    breed: "",
+    breed_group: "",
+    photo_urls: [],
+    gender: "",
+    age_years: "",
+    age_group: "",
+    name: "",
+    appearance: "",
+    description: "",
+    health_info: "",
+    behavior: "",
+    unique_details: "",
+    chipped: "",
+    chip_number: "",
+    collar: "",
+    size: "",
+  },
+  lostDate: "",
+  lostTime: "",
+  lost_place: {
+    country: "",
+    city: "",
+    region: "",
+    district: "",
+    street: "",
+    house_number: "",
+    apartment: "",
+    postal_code: "",
+    full_address: "",
+  },
   reward: "",
-  extraNotes: "",
 };
 
 const steps: Step[] = [
@@ -116,58 +123,43 @@ const steps: Step[] = [
     icon: Cat,
   },
   {
-    title: "Cat's name?",
-    description: "Name or nickname.",
+    title: "Your contact",
+    description: "Owner details first.",
+    icon: User,
+  },
+  {
+    title: "Cat basics",
+    description: "Core pet schema fields.",
     icon: PawPrint,
   },
   {
-    title: "Last seen?",
-    description: "Approximate is okay.",
+    title: "Last seen",
+    description: "Case time and place.",
     icon: Calendar,
   },
   {
-    title: "Where?",
-    description: "Area first. Exact address optional.",
-    icon: MapPin,
-  },
-  {
     title: "Add photos",
-    description: "Best for matching.",
+    description: "Photo URLs for the case.",
     icon: Camera,
   },
   {
     title: "Appearance",
-    description: "Color, size, fur.",
+    description: "Structured pet details.",
     icon: Sparkles,
   },
   {
-    title: "Unique marks",
-    description: "Tiny clues help.",
+    title: "Health and behavior",
+    description: "Useful search context.",
     icon: BadgeCheck,
   },
   {
-    title: "Basic details",
-    description: "Unknown is fine.",
-    icon: Heart,
-  },
-  {
     title: "ID details",
-    description: "Collar, tag, chip.",
+    description: "Collar and chip fields.",
     icon: ShieldCheck,
   },
   {
-    title: "Behavior",
-    description: "Help people act safely.",
-    icon: Cat,
-  },
-  {
-    title: "Contact",
-    description: "One way is enough.",
-    icon: User,
-  },
-  {
-    title: "Extras",
-    description: "Reward, meds, notes.",
+    title: "Reward",
+    description: "Optional case reward.",
     icon: Heart,
   },
   {
@@ -177,36 +169,18 @@ const steps: Step[] = [
   },
 ];
 
-const markingOptions = [
-  "White paws",
-  "Short tail",
-  "Ear notch",
-  "Scar",
-  "Different-colored eyes",
-  "Distinct collar",
-  "Limp",
-];
-
-const behaviorOptions = [
-  "Friendly",
-  "Shy",
-  "Scared",
-  "May run",
-  "Do not chase",
-  "Comes for food",
-];
-
-const sizeOptions = ["Small", "Medium", "Large", "Not sure"];
-const furOptions = ["Short", "Medium", "Long", "Not sure"];
-const genderOptions = ["Female", "Male", "Unknown"];
-const yesNoOptions = ["Yes", "No", "Not sure"];
-const indoorOptions = ["Indoor only", "Outdoor access", "Mostly outdoor", "Not sure"];
-const contactOptions = ["Email", "Phone", "Either"];
+const sizeOptions: Size[] = ["small", "medium", "large"];
+const genderOptions: Pet["gender"][] = ["female", "male"];
+const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
+const yesNoOptions = ["Yes", "No"];
 
 export function MissingCatForm() {
+  const [intakeId, setIntakeId] = useState(createIntakeId);
+  const [createdAt, setCreatedAt] = useState(createTimestamp);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const progress = useMemo(
@@ -222,56 +196,77 @@ export function MissingCatForm() {
     setError("");
   }
 
-  function toggleListValue(key: "markings" | "behavior", value: string) {
-    setFormData((current) => {
-      const existing = current[key];
-      return {
-        ...current,
-        [key]: existing.includes(value)
-          ? existing.filter((item) => item !== value)
-          : [...existing, value],
-      };
-    });
+  function updateOwner<Key extends keyof Owner>(key: Key, value: Owner[Key]) {
+    setFormData((current) => ({
+      ...current,
+      owner: { ...current.owner, [key]: value },
+    }));
+    setError("");
+  }
+
+  function updatePet<Key extends keyof FormData["pet"]>(key: Key, value: FormData["pet"][Key]) {
+    setFormData((current) => ({
+      ...current,
+      pet: { ...current.pet, [key]: value },
+    }));
+    setError("");
+  }
+
+  function updateLostPlace<Key extends keyof FormData["lost_place"]>(key: Key, value: string) {
+    setFormData((current) => ({
+      ...current,
+      lost_place: { ...current.lost_place, [key]: value },
+    }));
     setError("");
   }
 
   function validateStep() {
-    if (currentStep === 1 && !formData.catName.trim()) {
-      return "Please add your cat's name, or write Unknown.";
-    }
-
-    if (currentStep === 2 && !formData.lastSeenDate) {
-      return "Please add the date your cat was last seen.";
-    }
-
-    if (currentStep === 3) {
-      if (!formData.city.trim()) {
-        return "Please add the city.";
-      }
-
-      if (!formData.area.trim()) {
-        return "Please add the area or neighborhood.";
-      }
-    }
-
-    if (currentStep === 10) {
-      if (!formData.ownerName.trim()) {
+    if (currentStep === 1) {
+      if (!formData.owner.name.trim()) {
         return "Please add your name.";
       }
 
-      if (!formData.email.trim() && !formData.phone.trim()) {
-        return "Please add an email or phone number.";
+      if (!formData.owner.email.trim()) {
+        return "Please add your email.";
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!formData.pet.name.trim()) {
+        return "Please add your cat's name, or write Unknown.";
+      }
+
+      if (!formData.pet.gender) {
+        return "Please choose your cat's gender.";
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!formData.lostDate) {
+        return "Please add the date your cat was last seen.";
+      }
+
+      if (!formData.lost_place.city.trim()) {
+        return "Please add the city.";
       }
     }
 
     return "";
   }
 
-  function goNext() {
+  async function goNext() {
     const validationError = validateStep();
     if (validationError) {
       setError(validationError);
       return;
+    }
+
+    if (currentStep > 0) {
+      const saveError = await persistCase();
+      if (saveError) {
+        setError(saveError);
+        return;
+      }
     }
 
     setCurrentStep((current) => Math.min(current + 1, steps.length - 1));
@@ -283,15 +278,46 @@ export function MissingCatForm() {
     setError("");
   }
 
-  function createCasePreview() {
+  async function createCasePreview() {
+    const saveError = await persistCase();
+    if (saveError) {
+      setError(saveError);
+      return;
+    }
+
     setSubmitted(true);
   }
 
   function startOver() {
+    setIntakeId(createIntakeId());
+    setCreatedAt(createTimestamp());
     setFormData(initialFormData);
     setCurrentStep(0);
     setError("");
     setSubmitted(false);
+  }
+
+  async function persistCase() {
+    setIsSaving(true);
+
+    try {
+      const petCase = createCaseFromForm(formData, intakeId, createdAt);
+      const response = await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(petCase),
+      });
+
+      if (!response.ok) {
+        return await getIntakeErrorMessage(response);
+      }
+
+      return "";
+    } catch {
+      return "We couldn't save this step. Please check your connection and try again.";
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (submitted) {
@@ -305,12 +331,12 @@ export function MissingCatForm() {
             Preview ready
           </CardTitle>
           <CardDescription className="max-w-xs text-base font-medium text-[#74675d]">
-            No request sent yet.
+            Saved to the case repository.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-[2rem] bg-[#f0fbf5] p-5 text-sm font-medium text-[#245643]">
-            <span className="font-semibold">Preview case:</span> {formData.catName || "Your cat"} last seen in {formData.area || "your area"}{formData.city ? `, ${formData.city}` : ""}.
+            <span className="font-semibold">Preview case:</span> {formData.pet.name || "Your cat"} last seen in {formData.lost_place.district || "your area"}{formData.lost_place.city ? `, ${formData.lost_place.city}` : ""}.
           </div>
         </CardContent>
         <CardFooter className="justify-center">
@@ -325,15 +351,24 @@ export function MissingCatForm() {
   return (
     <Card className="mx-auto w-full max-w-[460px] overflow-hidden rounded-[2.5rem] border-0 bg-white shadow-2xl shadow-[#d9b28b]/25 md:max-w-3xl">
       <CardHeader className="gap-5 p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-4">
-          <Badge variant="secondary" className="h-8 rounded-full bg-[#ffe6a8] px-4 text-[#7a4b21]">
-            Missing cat
-          </Badge>
+        <div className="flex items-center justify-end gap-4">
           <span className="rounded-full bg-[#f4eee6] px-3 py-1 text-sm font-bold text-[#74675d]">
             {currentStep + 1}/{steps.length}
           </span>
         </div>
-        <Progress value={progress} className="h-2 bg-[#f4eee6]" />
+        <div className="space-y-2">
+          <div className="relative h-8">
+            <Badge
+              variant="secondary"
+              className="absolute top-0 h-8 rounded-full bg-[#ffe6a8] px-3 text-[#7a4b21] shadow-sm transition-[left,transform] duration-300 ease-out"
+              style={{ left: `${progress}%`, transform: `translateX(-${progress}%)` }}
+            >
+              <TriangleAlert className="size-3.5" />
+              Almost found your cat
+            </Badge>
+          </div>
+          <Progress value={progress} className="h-2 bg-[#f4eee6]" />
+        </div>
         <div className="relative overflow-hidden rounded-[2rem] bg-[#fff2d0] p-5">
           <div className="absolute -right-8 -top-8 size-28 rounded-full bg-[#f8c8a7]" />
           <div className="absolute -bottom-10 right-10 size-24 rounded-full bg-[#bfe8d5]" />
@@ -363,24 +398,24 @@ export function MissingCatForm() {
           variant="outline"
           className="h-12 rounded-full border-[#eadfD1] bg-white px-5 text-[#74675d]"
           onClick={goBack}
-          disabled={currentStep === 0}
+          disabled={currentStep === 0 || isSaving}
         >
           <ChevronLeft className="size-4" />
           Back
         </Button>
         {currentStep === 0 ? (
-          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext}>
-            Start
+          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
+            {isSaving ? "Saving" : "Start"}
             <ChevronRight className="size-4" />
           </Button>
         ) : currentStep === steps.length - 1 ? (
-          <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={createCasePreview}>
-            Create case
+          <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={createCasePreview} disabled={isSaving}>
+            {isSaving ? "Saving" : "Create case"}
             <CheckCircle2 className="size-4" />
           </Button>
         ) : (
-          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext}>
-            Continue
+          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={goNext} disabled={isSaving}>
+            {isSaving ? "Saving" : "Continue"}
             <ChevronRight className="size-4" />
           </Button>
         )}
@@ -394,43 +429,71 @@ export function MissingCatForm() {
         return <WelcomeStep />;
       case 1:
         return (
-          <TwoColumnFields>
-            <Field label="Cat name" required>
-              <Input value={formData.catName} onChange={(event) => updateField("catName", event.target.value)} placeholder="Miso" />
+          <div className="space-y-5">
+            <TwoColumnFields>
+              <Field label="Your name" required>
+                <Input value={formData.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" />
+              </Field>
+              <Field label="Email" required>
+                <Input type="email" value={formData.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" />
+              </Field>
+            </TwoColumnFields>
+            <Field label="Phone number">
+              <Input value={formData.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional" />
             </Field>
-            <Field label="Nickname or sounds they respond to">
-              <Input value={formData.nickname} onChange={(event) => updateField("nickname", event.target.value)} placeholder="Treat bag, pspsps, Mimi" />
-            </Field>
-          </TwoColumnFields>
+          </div>
         );
       case 2:
         return (
-          <TwoColumnFields>
-            <Field label="Date last seen" required>
-              <Input type="date" value={formData.lastSeenDate} onChange={(event) => updateField("lastSeenDate", event.target.value)} />
-            </Field>
-            <Field label="Approximate time">
-              <Input type="time" value={formData.lastSeenTime} onChange={(event) => updateField("lastSeenTime", event.target.value)} />
-            </Field>
-          </TwoColumnFields>
+          <div className="space-y-5">
+            <TwoColumnFields>
+              <Field label="Cat name" required>
+                <Input value={formData.pet.name} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" />
+              </Field>
+              <Field label="Gender" required>
+                <OptionGroup options={genderOptions} value={formData.pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
+              </Field>
+            </TwoColumnFields>
+            <TwoColumnFields>
+              <Field label="Breed">
+                <Input value={formData.pet.breed} onChange={(event) => updatePet("breed", event.target.value)} placeholder="Tabby, Siamese, mixed" />
+              </Field>
+              <Field label="Breed group">
+                <Input value={formData.pet.breed_group} onChange={(event) => updatePet("breed_group", event.target.value)} placeholder="Domestic short hair" />
+              </Field>
+            </TwoColumnFields>
+          </div>
         );
       case 3:
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <Field label="City" required>
-                <Input value={formData.city} onChange={(event) => updateField("city", event.target.value)} placeholder="Brooklyn" />
+              <Field label="Date last seen" required>
+                <Input type="date" value={formData.lostDate} onChange={(event) => updateField("lostDate", event.target.value)} />
               </Field>
-              <Field label="Area or neighborhood" required>
-                <Input value={formData.area} onChange={(event) => updateField("area", event.target.value)} placeholder="Park Slope" />
+              <Field label="Approximate time">
+                <Input type="time" value={formData.lostTime} onChange={(event) => updateField("lostTime", event.target.value)} />
               </Field>
             </TwoColumnFields>
-            <Field label="Nearby street, park, building, or landmark">
-              <Input value={formData.landmark} onChange={(event) => updateField("landmark", event.target.value)} placeholder="Near 5th Ave and 9th St" />
+            <TwoColumnFields>
+              <Field label="Country">
+                <Input value={formData.lost_place.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="US" />
+              </Field>
+              <Field label="City" required>
+                <Input value={formData.lost_place.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" />
+              </Field>
+            </TwoColumnFields>
+            <TwoColumnFields>
+              <Field label="Region">
+                <Input value={formData.lost_place.region} onChange={(event) => updateLostPlace("region", event.target.value)} placeholder="NY" />
+              </Field>
+              <Field label="District or neighborhood">
+                <Input value={formData.lost_place.district} onChange={(event) => updateLostPlace("district", event.target.value)} placeholder="Park Slope" />
+              </Field>
+            </TwoColumnFields>
+            <Field label="Full address or landmark">
+              <Input value={formData.lost_place.full_address} onChange={(event) => updateLostPlace("full_address", event.target.value)} placeholder="Near 5th Ave and 9th St" />
             </Field>
-            <p className="rounded-2xl bg-white/80 p-4 text-sm text-stone-600">
-              Exact address can stay private.
-            </p>
           </div>
         );
       case 4:
@@ -440,7 +503,7 @@ export function MissingCatForm() {
             <label htmlFor="photos" className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-amber-300 bg-white/80 p-6 text-center transition hover:bg-amber-50">
               <Camera className="mb-3 size-9 text-amber-700" />
               <span className="font-semibold text-stone-900">Pick photos</span>
-              <span className="mt-1 text-sm text-stone-500">Preview only.</span>
+              <span className="mt-1 text-sm text-stone-500">File names are saved as photo URLs for now.</span>
             </label>
             <Input
               id="photos"
@@ -448,11 +511,11 @@ export function MissingCatForm() {
               accept="image/*"
               multiple
               className="sr-only"
-              onChange={(event) => updateField("photos", Array.from(event.target.files ?? []).map((file) => file.name))}
+              onChange={(event) => updatePet("photo_urls", Array.from(event.target.files ?? []).map((file) => file.name))}
             />
-            {formData.photos.length ? (
+            {formData.pet.photo_urls.length ? (
               <div className="flex flex-wrap gap-2">
-                {formData.photos.map((photo) => (
+                {formData.pet.photo_urls.map((photo) => (
                   <Badge key={photo} variant="outline" className="h-7 rounded-full bg-white px-3 text-stone-700">
                     {photo}
                   </Badge>
@@ -467,96 +530,170 @@ export function MissingCatForm() {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <Field label="Breed, if known">
-                <Input value={formData.breed} onChange={(event) => updateField("breed", event.target.value)} placeholder="Tabby, Siamese, mixed" />
-              </Field>
-              <Field label="Main color">
-                <Input value={formData.mainColor} onChange={(event) => updateField("mainColor", event.target.value)} placeholder="Gray" />
-              </Field>
+              <OptionGroup label="Size" options={sizeOptions} value={formData.pet.size} onSelect={(value) => updatePet("size", value as Size)} />
+              <OptionGroup label="Age group" options={ageGroupOptions} value={formData.pet.age_group} onSelect={(value) => updatePet("age_group", value as NonNullable<Pet["age_group"]>)} />
             </TwoColumnFields>
-            <Field label="Secondary colors">
-              <Input value={formData.secondaryColors} onChange={(event) => updateField("secondaryColors", event.target.value)} placeholder="White chest, black tail" />
+            <Field label="Age in years">
+              <Input type="number" min="0" value={formData.pet.age_years} onChange={(event) => updatePet("age_years", event.target.value)} placeholder="3" />
             </Field>
-            <OptionGroup label="Size" options={sizeOptions} value={formData.size} onSelect={(value) => updateField("size", value)} />
-            <OptionGroup label="Fur length" options={furOptions} value={formData.furLength} onSelect={(value) => updateField("furLength", value)} />
+            <Field label="Appearance">
+              <Textarea value={formData.pet.appearance} onChange={(event) => updatePet("appearance", event.target.value)} placeholder="Gray tabby, white chest, long fur..." />
+            </Field>
+            <Field label="Description">
+              <Textarea value={formData.pet.description} onChange={(event) => updatePet("description", event.target.value)} placeholder="Responds to treats, shy with strangers..." />
+            </Field>
           </div>
         );
       case 6:
         return (
-          <div className="space-y-6">
-            <ChipGroup label="Recognizable details" options={markingOptions} selected={formData.markings} onToggle={(value) => toggleListValue("markings", value)} />
-            <Field label="Other markings or details">
-              <Textarea value={formData.otherMarkings} onChange={(event) => updateField("otherMarkings", event.target.value)} placeholder="Tiny white spot on nose, clipped left ear, striped tail..." />
+          <div className="space-y-5">
+            <Field label="Health info">
+              <Textarea value={formData.pet.health_info} onChange={(event) => updatePet("health_info", event.target.value)} placeholder="Medication, blind, elderly, injured..." />
+            </Field>
+            <Field label="Behavior">
+              <Textarea value={formData.pet.behavior} onChange={(event) => updatePet("behavior", event.target.value)} placeholder="Friendly, scared, may run, do not chase..." />
+            </Field>
+            <Field label="Unique details">
+              <Textarea value={formData.pet.unique_details} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
             </Field>
           </div>
         );
       case 7:
         return (
           <div className="space-y-5">
-            <OptionGroup label="Gender" options={genderOptions} value={formData.gender} onSelect={(value) => updateField("gender", value)} />
-            <Field label="Approximate age">
-              <Input value={formData.age} onChange={(event) => updateField("age", event.target.value)} placeholder="3 years, kitten, senior" />
+            <TwoColumnFields>
+              <OptionGroup label="Microchipped" options={yesNoOptions} value={formData.pet.chipped} onSelect={(value) => updatePet("chipped", value as "Yes" | "No")} />
+              <OptionGroup label="Wearing collar" options={yesNoOptions} value={formData.pet.collar} onSelect={(value) => updatePet("collar", value as "Yes" | "No")} />
+            </TwoColumnFields>
+            <Field label="Chip number">
+              <Input value={formData.pet.chip_number} onChange={(event) => updatePet("chip_number", event.target.value)} placeholder="Optional" />
             </Field>
-            <OptionGroup label="Spayed or neutered?" options={yesNoOptions} value={formData.spayedNeutered} onSelect={(value) => updateField("spayedNeutered", value)} />
           </div>
         );
       case 8:
         return (
           <div className="space-y-5">
-            <OptionGroup label="Was your cat wearing a collar?" options={yesNoOptions} value={formData.collar} onSelect={(value) => updateField("collar", value)} />
-            <Field label="Collar color">
-              <Input value={formData.collarColor} onChange={(event) => updateField("collarColor", event.target.value)} placeholder="Red with bell" />
-            </Field>
-            <OptionGroup label="Tags?" options={yesNoOptions} value={formData.tags} onSelect={(value) => updateField("tags", value)} />
-            <OptionGroup label="Microchipped?" options={yesNoOptions} value={formData.microchipped} onSelect={(value) => updateField("microchipped", value)} />
-          </div>
-        );
-      case 9:
-        return (
-          <div className="space-y-6">
-            <OptionGroup label="Indoor or outdoor status" options={indoorOptions} value={formData.indoorOutdoor} onSelect={(value) => updateField("indoorOutdoor", value)} />
-            <ChipGroup label="Behavior" options={behaviorOptions} selected={formData.behavior} onToggle={(value) => toggleListValue("behavior", value)} />
-              <Field label="If spotted">
-              <Textarea value={formData.sightingInstructions} onChange={(event) => updateField("sightingInstructions", event.target.value)} />
-            </Field>
-          </div>
-        );
-      case 10:
-        return (
-          <div className="space-y-5">
-            <TwoColumnFields>
-              <Field label="Your name" required>
-                <Input value={formData.ownerName} onChange={(event) => updateField("ownerName", event.target.value)} placeholder="Alex" />
-              </Field>
-              <Field label="Email">
-                <Input type="email" value={formData.email} onChange={(event) => updateField("email", event.target.value)} placeholder="you@example.com" />
-              </Field>
-            </TwoColumnFields>
-            <TwoColumnFields>
-              <Field label="Phone">
-                <Input value={formData.phone} onChange={(event) => updateField("phone", event.target.value)} placeholder="Optional" />
-              </Field>
-              <OptionGroup label="Preferred contact" options={contactOptions} value={formData.preferredContact} onSelect={(value) => updateField("preferredContact", value)} />
-            </TwoColumnFields>
-          </div>
-        );
-      case 11:
-        return (
-          <div className="space-y-5">
-            <Field label="Medical needs">
-              <Input value={formData.medicalNeeds} onChange={(event) => updateField("medicalNeeds", event.target.value)} placeholder="Medication, blind, elderly, injured..." />
-            </Field>
             <Field label="Reward">
               <Input value={formData.reward} onChange={(event) => updateField("reward", event.target.value)} placeholder="No reward, reward offered, or amount" />
             </Field>
-            <Field label="Anything else?">
-              <Textarea value={formData.extraNotes} onChange={(event) => updateField("extraNotes", event.target.value)} placeholder="Add anything people should know." />
-            </Field>
+            <p className="rounded-2xl bg-white/80 p-4 text-sm text-stone-600">
+              This is optional and maps directly to the case reward field.
+            </p>
           </div>
         );
       default:
         return <ReviewStep formData={formData} />;
     }
+  }
+}
+
+async function getIntakeErrorMessage(response: Response) {
+  try {
+    const body = (await response.json()) as IntakeErrorResponse;
+
+    if (body.error) {
+      return body.error;
+    }
+
+    const firstIssue = body.issues?.[0];
+    if (firstIssue) {
+      return firstIssue.path
+        ? `${firstIssue.path}: ${firstIssue.message}`
+        : firstIssue.message;
+    }
+  } catch {
+    // Fall back to a generic message when the API does not return JSON.
+  }
+
+  return "We couldn't save this step. Please try again.";
+}
+
+function createIntakeId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
+
+function createTimestamp() {
+  return new Date().toISOString() as Case["created_at"];
+}
+
+function createCaseFromForm(formData: FormData, id: string, createdAt: Case["created_at"]): Case {
+  const updatedAt = createTimestamp();
+  const ageYears = Number(formData.pet.age_years);
+
+  return {
+    id,
+    owner: {
+      name: formData.owner.name.trim(),
+      email: formData.owner.email.trim(),
+      ...optionalProperty("phone_number", formData.owner.phone_number),
+    },
+    pet: {
+      species: "cat",
+      breed: formData.pet.breed.trim(),
+      breed_group: formData.pet.breed_group.trim(),
+      photo_urls: formData.pet.photo_urls,
+      gender: formData.pet.gender || "female",
+      ...optionalProperty("age_years", Number.isFinite(ageYears) ? ageYears : undefined),
+      ...optionalProperty("age_group", formData.pet.age_group || undefined),
+      ...optionalProperty("name", formData.pet.name),
+      ...optionalProperty("appearance", formData.pet.appearance),
+      ...optionalProperty("description", formData.pet.description),
+      ...optionalProperty("health_info", formData.pet.health_info),
+      ...optionalProperty("behavior", formData.pet.behavior),
+      ...optionalProperty("unique_details", formData.pet.unique_details),
+      ...optionalProperty("chipped", yesNoToBoolean(formData.pet.chipped)),
+      ...optionalProperty("chip_number", formData.pet.chip_number),
+      ...optionalProperty("collar", yesNoToBoolean(formData.pet.collar)),
+      ...optionalProperty("size", formData.pet.size || undefined),
+    },
+    lost_time: createLostTime(formData, updatedAt),
+    lost_place: createAddress(formData.lost_place),
+    sightings: [],
+    created_at: createdAt,
+    updated_at: updatedAt,
+    ...optionalProperty("reward", formData.reward),
+  };
+}
+
+function createLostTime(formData: FormData, fallback: Case["updated_at"]) {
+  if (!formData.lostDate) {
+    return fallback;
+  }
+
+  return new Date(`${formData.lostDate}T${formData.lostTime || "00:00"}`).toISOString() as Case["lost_time"];
+}
+
+function createAddress(address: FormData["lost_place"]): Address {
+  return {
+    country: address.country.trim(),
+    city: address.city.trim(),
+    ...optionalProperty("region", address.region),
+    ...optionalProperty("district", address.district),
+    ...optionalProperty("street", address.street),
+    ...optionalProperty("house_number", address.house_number),
+    ...optionalProperty("apartment", address.apartment),
+    ...optionalProperty("postal_code", address.postal_code),
+    ...optionalProperty("full_address", address.full_address),
+  };
+}
+
+function optionalProperty<Key extends string, Value>(key: Key, value: Value | undefined) {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+
+    return trimmedValue ? { [key]: trimmedValue } as Record<Key, string> : {};
+  }
+
+  return value === undefined ? {} : { [key]: value } as Record<Key, Value>;
+}
+
+function yesNoToBoolean(value: string) {
+  if (value === "Yes") {
+    return true;
+  }
+
+  if (value === "No") {
+    return false;
   }
 }
 
@@ -615,14 +752,14 @@ function OptionGroup({
   value,
   onSelect,
 }: {
-  label: string;
+  label?: string;
   options: string[];
   value: string;
   onSelect: (value: string) => void;
 }) {
   return (
     <div className="space-y-2">
-      <Label className="font-bold text-[#2d251f]">{label}</Label>
+      {label ? <Label className="font-bold text-[#2d251f]">{label}</Label> : null}
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <Button
@@ -640,41 +777,6 @@ function OptionGroup({
   );
 }
 
-function ChipGroup({
-  label,
-  options,
-  selected,
-  onToggle,
-}: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onToggle: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="font-bold text-[#2d251f]">{label}</Label>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const active = selected.includes(option);
-          return (
-            <Button
-              key={option}
-              type="button"
-              variant={active ? "default" : "outline"}
-              className={`h-11 rounded-full px-4 font-bold ${active ? "bg-[#d07b47] text-white hover:bg-[#b86638]" : "border-0 bg-white text-[#74675d]"}`}
-              onClick={() => onToggle(option)}
-            >
-              {active ? <CheckCircle2 className="size-4" /> : null}
-              {option}
-            </Button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function ReviewStep({ formData }: { formData: FormData }) {
   return (
     <div className="space-y-5">
@@ -683,23 +785,23 @@ function ReviewStep({ formData }: { formData: FormData }) {
           <div>
             <p className="text-sm font-black text-[#d07b47]">Preview</p>
             <h3 className="mt-1 text-3xl font-black text-[#2d251f]">
-              {formData.catName || "Unnamed cat"}
+              {formData.pet.name || "Unnamed cat"}
             </h3>
             <p className="mt-1 font-medium text-[#74675d]">
-              Last seen {formData.lastSeenDate || "date unknown"} in {formData.area || "area unknown"}{formData.city ? `, ${formData.city}` : ""}.
+              Last seen {formData.lostDate || "date unknown"} in {formData.lost_place.district || "area unknown"}{formData.lost_place.city ? `, ${formData.lost_place.city}` : ""}.
             </p>
           </div>
           <Cat className="size-10 text-[#d07b47]" />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <ReviewCard title="Appearance" items={[formData.breed, formData.mainColor, formData.secondaryColors, formData.size, formData.furLength]} />
-        <ReviewCard title="Recognizable" items={[...formData.markings, formData.otherMarkings]} />
-        <ReviewCard title="Safety" items={[formData.indoorOutdoor, ...formData.behavior, formData.sightingInstructions]} />
-        <ReviewCard title="Contact" items={[formData.ownerName, formData.preferredContact, formData.email, formData.phone]} />
+        <ReviewCard title="Owner" items={[formData.owner.name, formData.owner.email, formData.owner.phone_number ?? ""]} />
+        <ReviewCard title="Pet" items={[formData.pet.breed, formData.pet.breed_group, formData.pet.gender, formData.pet.size]} />
+        <ReviewCard title="Details" items={[formData.pet.appearance, formData.pet.description, formData.pet.unique_details]} />
+        <ReviewCard title="Safety" items={[formData.pet.health_info, formData.pet.behavior]} />
       </div>
       <Separator className="bg-[#eadfd1]" />
-      <p className="text-sm font-medium text-[#74675d]">Local preview only.</p>
+      <p className="text-sm font-medium text-[#74675d]">Saved after each completed schema step.</p>
     </div>
   );
 }
