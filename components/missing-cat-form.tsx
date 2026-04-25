@@ -38,33 +38,6 @@ import type { Owner } from "@/domain/owner";
 import type { Pet } from "@/domain/pets";
 import type { Size } from "@/domain/pets";
 
-type FormData = {
-  owner: Owner;
-  pet: {
-    species: "cat";
-    breed: string;
-    breed_group: string;
-    photo_urls: string[];
-    gender: "" | Pet["gender"];
-    age_years: string;
-    age_group: "" | NonNullable<Pet["age_group"]>;
-    name: string;
-    appearance: string;
-    description: string;
-    health_info: string;
-    behavior: string;
-    unique_details: string;
-    chipped: "" | "Yes" | "No";
-    chip_number: string;
-    collar: "" | "Yes" | "No";
-    size: "" | Size;
-  };
-  lostDate: string;
-  lostTime: string;
-  lost_place: Record<keyof Omit<Address, "coordinates">, string>;
-  reward: string;
-};
-
 type IntakeErrorResponse = {
   error?: string;
   issues?: { path: string; message: string }[];
@@ -74,46 +47,6 @@ type Step = {
   title: string;
   description: string;
   icon: typeof Cat;
-};
-
-const initialFormData: FormData = {
-  owner: {
-    name: "",
-    email: "",
-  },
-  pet: {
-    species: "cat",
-    breed: "",
-    breed_group: "",
-    photo_urls: [],
-    gender: "",
-    age_years: "",
-    age_group: "",
-    name: "",
-    appearance: "",
-    description: "",
-    health_info: "",
-    behavior: "",
-    unique_details: "",
-    chipped: "",
-    chip_number: "",
-    collar: "",
-    size: "",
-  },
-  lostDate: "",
-  lostTime: "",
-  lost_place: {
-    country: "",
-    city: "",
-    region: "",
-    district: "",
-    street: "",
-    house_number: "",
-    apartment: "",
-    postal_code: "",
-    full_address: "",
-  },
-  reward: "",
 };
 
 const steps: Step[] = [
@@ -174,11 +107,9 @@ const genderOptions: Pet["gender"][] = ["female", "male"];
 const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
 const yesNoOptions = ["Yes", "No"];
 
-export function MissingCatForm() {
-  const [intakeId, setIntakeId] = useState(createIntakeId);
-  const [createdAt, setCreatedAt] = useState(createTimestamp);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [currentStep, setCurrentStep] = useState(0);
+export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
+  const [petCase, setPetCase] = useState<Case>(() => initialCase ?? createEmptyCase());
+  const [currentStep, setCurrentStep] = useState(() => initialCase ? 2 : 0);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -191,62 +122,92 @@ export function MissingCatForm() {
   const step = steps[currentStep];
   const Icon = step.icon;
 
-  function updateField<Key extends keyof FormData>(key: Key, value: FormData[Key]) {
-    setFormData((current) => ({ ...current, [key]: value }));
+  const pet = petCase.pet ?? createEmptyPet();
+  const lostPlace = petCase.lost_place ?? createEmptyAddress();
+  const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
+  const lostTime = petCase.lost_time ? petCase.lost_time.slice(11, 16) : "";
+
+  function updateReward(value: string) {
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      reward: value.trim() || undefined,
+    }));
     setError("");
   }
 
   function updateOwner<Key extends keyof Owner>(key: Key, value: Owner[Key]) {
-    setFormData((current) => ({
+    setPetCase((current) => ({
       ...current,
+      updated_at: createTimestamp(),
       owner: { ...current.owner, [key]: value },
     }));
     setError("");
   }
 
-  function updatePet<Key extends keyof FormData["pet"]>(key: Key, value: FormData["pet"][Key]) {
-    setFormData((current) => ({
+  function updatePet<Key extends keyof Pet>(key: Key, value: Pet[Key]) {
+    setPetCase((current) => ({
       ...current,
-      pet: { ...current.pet, [key]: value },
+      updated_at: createTimestamp(),
+      pet: { ...(current.pet ?? createEmptyPet()), [key]: value },
     }));
     setError("");
   }
 
-  function updateLostPlace<Key extends keyof FormData["lost_place"]>(key: Key, value: string) {
-    setFormData((current) => ({
+  function updateLostPlace<Key extends keyof Omit<Address, "coordinates">>(key: Key, value: Address[Key]) {
+    setPetCase((current) => ({
       ...current,
-      lost_place: { ...current.lost_place, [key]: value },
+      updated_at: createTimestamp(),
+      lost_place: { ...(current.lost_place ?? createEmptyAddress()), [key]: value },
+    }));
+    setError("");
+  }
+
+  function updateLostDate(value: string) {
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      lost_time: createLostTime(value, lostTime),
+    }));
+    setError("");
+  }
+
+  function updateLostTime(value: string) {
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      lost_time: createLostTime(lostDate, value),
     }));
     setError("");
   }
 
   function validateStep() {
     if (currentStep === 1) {
-      if (!formData.owner.name.trim()) {
+      if (!petCase.owner.name.trim()) {
         return "Please add your name.";
       }
 
-      if (!formData.owner.email.trim()) {
+      if (!petCase.owner.email.trim()) {
         return "Please add your email.";
       }
     }
 
     if (currentStep === 2) {
-      if (!formData.pet.name.trim()) {
+      if (!pet.name?.trim()) {
         return "Please add your cat's name, or write Unknown.";
       }
 
-      if (!formData.pet.gender) {
+      if (!pet.gender) {
         return "Please choose your cat's gender.";
       }
     }
 
     if (currentStep === 3) {
-      if (!formData.lostDate) {
+      if (!lostDate) {
         return "Please add the date your cat was last seen.";
       }
 
-      if (!formData.lost_place.city.trim()) {
+      if (!lostPlace.city.trim()) {
         return "Please add the city.";
       }
     }
@@ -289,19 +250,17 @@ export function MissingCatForm() {
   }
 
   function startOver() {
-    setIntakeId(createIntakeId());
-    setCreatedAt(createTimestamp());
-    setFormData(initialFormData);
+    setPetCase(createEmptyCase());
     setCurrentStep(0);
     setError("");
     setSubmitted(false);
+    rewriteToHomeUrl();
   }
 
   async function persistCase() {
     setIsSaving(true);
 
     try {
-      const petCase = createCaseFromForm(formData, intakeId, createdAt);
       const response = await fetch("/api/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -310,6 +269,11 @@ export function MissingCatForm() {
 
       if (!response.ok) {
         return await getIntakeErrorMessage(response);
+      }
+
+      const savedCase = await response.json() as { id?: string };
+      if (savedCase.id) {
+        rewriteToCaseUrl(savedCase.id);
       }
 
       return "";
@@ -336,7 +300,7 @@ export function MissingCatForm() {
         </CardHeader>
         <CardContent>
           <div className="rounded-[2rem] bg-[#f0fbf5] p-5 text-sm font-medium text-[#245643]">
-            <span className="font-semibold">Preview case:</span> {formData.pet.name || "Your cat"} last seen in {formData.lost_place.district || "your area"}{formData.lost_place.city ? `, ${formData.lost_place.city}` : ""}.
+            <span className="font-semibold">Preview case:</span> {pet.name || "Your cat"} last seen in {lostPlace.district || "your area"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
           </div>
         </CardContent>
         <CardFooter className="justify-center">
@@ -432,14 +396,14 @@ export function MissingCatForm() {
           <div className="space-y-5">
             <TwoColumnFields>
               <Field label="Your name" required>
-                <Input value={formData.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" />
+                <Input value={petCase.owner.name} onChange={(event) => updateOwner("name", event.target.value)} placeholder="Alex" />
               </Field>
               <Field label="Email" required>
-                <Input type="email" value={formData.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" />
+                <Input type="email" value={petCase.owner.email} onChange={(event) => updateOwner("email", event.target.value)} placeholder="you@example.com" />
               </Field>
             </TwoColumnFields>
             <Field label="Phone number">
-              <Input value={formData.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional" />
+              <Input value={petCase.owner.phone_number ?? ""} onChange={(event) => updateOwner("phone_number", event.target.value)} placeholder="Optional" />
             </Field>
           </div>
         );
@@ -448,18 +412,18 @@ export function MissingCatForm() {
           <div className="space-y-5">
             <TwoColumnFields>
               <Field label="Cat name" required>
-                <Input value={formData.pet.name} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" />
+                <Input value={pet.name ?? ""} onChange={(event) => updatePet("name", event.target.value)} placeholder="Miso" />
               </Field>
               <Field label="Gender" required>
-                <OptionGroup options={genderOptions} value={formData.pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
+                <OptionGroup options={genderOptions} value={pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
               </Field>
             </TwoColumnFields>
             <TwoColumnFields>
               <Field label="Breed">
-                <Input value={formData.pet.breed} onChange={(event) => updatePet("breed", event.target.value)} placeholder="Tabby, Siamese, mixed" />
+                <Input value={pet.breed} onChange={(event) => updatePet("breed", event.target.value)} placeholder="Tabby, Siamese, mixed" />
               </Field>
               <Field label="Breed group">
-                <Input value={formData.pet.breed_group} onChange={(event) => updatePet("breed_group", event.target.value)} placeholder="Domestic short hair" />
+                <Input value={pet.breed_group} onChange={(event) => updatePet("breed_group", event.target.value)} placeholder="Domestic short hair" />
               </Field>
             </TwoColumnFields>
           </div>
@@ -469,30 +433,30 @@ export function MissingCatForm() {
           <div className="space-y-5">
             <TwoColumnFields>
               <Field label="Date last seen" required>
-                <Input type="date" value={formData.lostDate} onChange={(event) => updateField("lostDate", event.target.value)} />
+                <Input type="date" value={lostDate} onChange={(event) => updateLostDate(event.target.value)} />
               </Field>
               <Field label="Approximate time">
-                <Input type="time" value={formData.lostTime} onChange={(event) => updateField("lostTime", event.target.value)} />
+                <Input type="time" value={lostTime} onChange={(event) => updateLostTime(event.target.value)} />
               </Field>
             </TwoColumnFields>
             <TwoColumnFields>
               <Field label="Country">
-                <Input value={formData.lost_place.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="US" />
+                <Input value={lostPlace.country} onChange={(event) => updateLostPlace("country", event.target.value)} placeholder="US" />
               </Field>
               <Field label="City" required>
-                <Input value={formData.lost_place.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" />
+                <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" />
               </Field>
             </TwoColumnFields>
             <TwoColumnFields>
               <Field label="Region">
-                <Input value={formData.lost_place.region} onChange={(event) => updateLostPlace("region", event.target.value)} placeholder="NY" />
+                <Input value={lostPlace.region ?? ""} onChange={(event) => updateLostPlace("region", event.target.value)} placeholder="NY" />
               </Field>
               <Field label="District or neighborhood">
-                <Input value={formData.lost_place.district} onChange={(event) => updateLostPlace("district", event.target.value)} placeholder="Park Slope" />
+                <Input value={lostPlace.district ?? ""} onChange={(event) => updateLostPlace("district", event.target.value)} placeholder="Park Slope" />
               </Field>
             </TwoColumnFields>
             <Field label="Full address or landmark">
-              <Input value={formData.lost_place.full_address} onChange={(event) => updateLostPlace("full_address", event.target.value)} placeholder="Near 5th Ave and 9th St" />
+              <Input value={lostPlace.full_address ?? ""} onChange={(event) => updateLostPlace("full_address", event.target.value)} placeholder="Near 5th Ave and 9th St" />
             </Field>
           </div>
         );
@@ -513,9 +477,9 @@ export function MissingCatForm() {
               className="sr-only"
               onChange={(event) => updatePet("photo_urls", Array.from(event.target.files ?? []).map((file) => file.name))}
             />
-            {formData.pet.photo_urls.length ? (
+            {pet.photo_urls.length ? (
               <div className="flex flex-wrap gap-2">
-                {formData.pet.photo_urls.map((photo) => (
+                {pet.photo_urls.map((photo) => (
                   <Badge key={photo} variant="outline" className="h-7 rounded-full bg-white px-3 text-stone-700">
                     {photo}
                   </Badge>
@@ -530,17 +494,17 @@ export function MissingCatForm() {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <OptionGroup label="Size" options={sizeOptions} value={formData.pet.size} onSelect={(value) => updatePet("size", value as Size)} />
-              <OptionGroup label="Age group" options={ageGroupOptions} value={formData.pet.age_group} onSelect={(value) => updatePet("age_group", value as NonNullable<Pet["age_group"]>)} />
+              <OptionGroup label="Size" options={sizeOptions} value={pet.size ?? ""} onSelect={(value) => updatePet("size", value as Size)} />
+              <OptionGroup label="Age group" options={ageGroupOptions} value={pet.age_group ?? ""} onSelect={(value) => updatePet("age_group", value as NonNullable<Pet["age_group"]>)} />
             </TwoColumnFields>
             <Field label="Age in years">
-              <Input type="number" min="0" value={formData.pet.age_years} onChange={(event) => updatePet("age_years", event.target.value)} placeholder="3" />
+              <Input type="number" min="0" value={pet.age_years?.toString() ?? ""} onChange={(event) => updatePet("age_years", event.target.value ? Number(event.target.value) : undefined)} placeholder="3" />
             </Field>
             <Field label="Appearance">
-              <Textarea value={formData.pet.appearance} onChange={(event) => updatePet("appearance", event.target.value)} placeholder="Gray tabby, white chest, long fur..." />
+              <Textarea value={pet.appearance ?? ""} onChange={(event) => updatePet("appearance", event.target.value)} placeholder="Gray tabby, white chest, long fur..." />
             </Field>
             <Field label="Description">
-              <Textarea value={formData.pet.description} onChange={(event) => updatePet("description", event.target.value)} placeholder="Responds to treats, shy with strangers..." />
+              <Textarea value={pet.description ?? ""} onChange={(event) => updatePet("description", event.target.value)} placeholder="Responds to treats, shy with strangers..." />
             </Field>
           </div>
         );
@@ -548,13 +512,13 @@ export function MissingCatForm() {
         return (
           <div className="space-y-5">
             <Field label="Health info">
-              <Textarea value={formData.pet.health_info} onChange={(event) => updatePet("health_info", event.target.value)} placeholder="Medication, blind, elderly, injured..." />
+              <Textarea value={pet.health_info ?? ""} onChange={(event) => updatePet("health_info", event.target.value)} placeholder="Medication, blind, elderly, injured..." />
             </Field>
             <Field label="Behavior">
-              <Textarea value={formData.pet.behavior} onChange={(event) => updatePet("behavior", event.target.value)} placeholder="Friendly, scared, may run, do not chase..." />
+              <Textarea value={pet.behavior ?? ""} onChange={(event) => updatePet("behavior", event.target.value)} placeholder="Friendly, scared, may run, do not chase..." />
             </Field>
             <Field label="Unique details">
-              <Textarea value={formData.pet.unique_details} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
+              <Textarea value={pet.unique_details ?? ""} onChange={(event) => updatePet("unique_details", event.target.value)} placeholder="Ear notch, scar, white paws..." />
             </Field>
           </div>
         );
@@ -562,11 +526,11 @@ export function MissingCatForm() {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-              <OptionGroup label="Microchipped" options={yesNoOptions} value={formData.pet.chipped} onSelect={(value) => updatePet("chipped", value as "Yes" | "No")} />
-              <OptionGroup label="Wearing collar" options={yesNoOptions} value={formData.pet.collar} onSelect={(value) => updatePet("collar", value as "Yes" | "No")} />
+                <OptionGroup label="Microchipped" options={yesNoOptions} value={booleanToYesNo(pet.chipped)} onSelect={(value) => updatePet("chipped", yesNoToBoolean(value))} />
+                <OptionGroup label="Wearing collar" options={yesNoOptions} value={booleanToYesNo(pet.collar)} onSelect={(value) => updatePet("collar", yesNoToBoolean(value))} />
             </TwoColumnFields>
             <Field label="Chip number">
-              <Input value={formData.pet.chip_number} onChange={(event) => updatePet("chip_number", event.target.value)} placeholder="Optional" />
+              <Input value={pet.chip_number ?? ""} onChange={(event) => updatePet("chip_number", event.target.value)} placeholder="Optional" />
             </Field>
           </div>
         );
@@ -574,7 +538,7 @@ export function MissingCatForm() {
         return (
           <div className="space-y-5">
             <Field label="Reward">
-              <Input value={formData.reward} onChange={(event) => updateField("reward", event.target.value)} placeholder="No reward, reward offered, or amount" />
+              <Input value={petCase.reward ?? ""} onChange={(event) => updateReward(event.target.value)} placeholder="No reward, reward offered, or amount" />
             </Field>
             <p className="rounded-2xl bg-white/80 p-4 text-sm text-stone-600">
               This is optional and maps directly to the case reward field.
@@ -582,7 +546,7 @@ export function MissingCatForm() {
           </div>
         );
       default:
-        return <ReviewStep formData={formData} />;
+        return <ReviewStep petCase={petCase} />;
     }
   }
 }
@@ -616,75 +580,53 @@ function createTimestamp() {
   return new Date().toISOString() as Case["created_at"];
 }
 
-function createCaseFromForm(formData: FormData, id: string, createdAt: Case["created_at"]): Case {
+function createEmptyCase(): Case {
   const updatedAt = createTimestamp();
-  const ageYears = Number(formData.pet.age_years);
 
   return {
-    id,
+    id: createIntakeId(),
     owner: {
-      name: formData.owner.name.trim(),
-      email: formData.owner.email.trim(),
-      ...optionalProperty("phone_number", formData.owner.phone_number),
+      name: "",
+      email: "",
     },
-    pet: {
-      species: "cat",
-      breed: formData.pet.breed.trim(),
-      breed_group: formData.pet.breed_group.trim(),
-      photo_urls: formData.pet.photo_urls,
-      gender: formData.pet.gender || "female",
-      ...optionalProperty("age_years", Number.isFinite(ageYears) ? ageYears : undefined),
-      ...optionalProperty("age_group", formData.pet.age_group || undefined),
-      ...optionalProperty("name", formData.pet.name),
-      ...optionalProperty("appearance", formData.pet.appearance),
-      ...optionalProperty("description", formData.pet.description),
-      ...optionalProperty("health_info", formData.pet.health_info),
-      ...optionalProperty("behavior", formData.pet.behavior),
-      ...optionalProperty("unique_details", formData.pet.unique_details),
-      ...optionalProperty("chipped", yesNoToBoolean(formData.pet.chipped)),
-      ...optionalProperty("chip_number", formData.pet.chip_number),
-      ...optionalProperty("collar", yesNoToBoolean(formData.pet.collar)),
-      ...optionalProperty("size", formData.pet.size || undefined),
-    },
-    lost_time: createLostTime(formData, updatedAt),
-    lost_place: createAddress(formData.lost_place),
+    pet: createEmptyPet(),
+    lost_place: createEmptyAddress(),
     sightings: [],
-    created_at: createdAt,
+    created_at: updatedAt,
     updated_at: updatedAt,
-    ...optionalProperty("reward", formData.reward),
   };
 }
 
-function createLostTime(formData: FormData, fallback: Case["updated_at"]) {
-  if (!formData.lostDate) {
-    return fallback;
-  }
-
-  return new Date(`${formData.lostDate}T${formData.lostTime || "00:00"}`).toISOString() as Case["lost_time"];
-}
-
-function createAddress(address: FormData["lost_place"]): Address {
+function createEmptyPet(): Pet {
   return {
-    country: address.country.trim(),
-    city: address.city.trim(),
-    ...optionalProperty("region", address.region),
-    ...optionalProperty("district", address.district),
-    ...optionalProperty("street", address.street),
-    ...optionalProperty("house_number", address.house_number),
-    ...optionalProperty("apartment", address.apartment),
-    ...optionalProperty("postal_code", address.postal_code),
-    ...optionalProperty("full_address", address.full_address),
+    species: "cat",
+    breed: "",
+    breed_group: "",
+    photo_urls: [],
+    gender: "female",
   };
 }
 
-function optionalProperty<Key extends string, Value>(key: Key, value: Value | undefined) {
-  if (typeof value === "string") {
-    const trimmedValue = value.trim();
+function createEmptyAddress(): Address {
+  return {
+    country: "",
+    city: "",
+    region: "",
+    district: "",
+    street: "",
+    house_number: "",
+    apartment: "",
+    postal_code: "",
+    full_address: "",
+  };
+}
 
-    return trimmedValue ? { [key]: trimmedValue } as Record<Key, string> : {};
+function createLostTime(date: string, time: string) {
+  if (!date) {
+    return undefined;
   }
 
-  return value === undefined ? {} : { [key]: value } as Record<Key, Value>;
+  return new Date(`${date}T${time || "00:00"}`).toISOString() as Case["lost_time"];
 }
 
 function yesNoToBoolean(value: string) {
@@ -694,6 +636,32 @@ function yesNoToBoolean(value: string) {
 
   if (value === "No") {
     return false;
+  }
+}
+
+function booleanToYesNo(value: boolean | undefined) {
+  if (value === true) {
+    return "Yes";
+  }
+
+  if (value === false) {
+    return "No";
+  }
+
+  return "";
+}
+
+function rewriteToCaseUrl(caseId: string) {
+  const casePath = `/cases/${encodeURIComponent(caseId)}`;
+
+  if (window.location.pathname !== casePath) {
+    window.history.replaceState(null, "", casePath);
+  }
+}
+
+function rewriteToHomeUrl() {
+  if (window.location.pathname !== "/") {
+    window.history.replaceState(null, "", "/");
   }
 }
 
@@ -777,7 +745,11 @@ function OptionGroup({
   );
 }
 
-function ReviewStep({ formData }: { formData: FormData }) {
+function ReviewStep({ petCase }: { petCase: Case }) {
+  const pet = petCase.pet ?? createEmptyPet();
+  const lostPlace = petCase.lost_place ?? createEmptyAddress();
+  const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
+
   return (
     <div className="space-y-5">
       <div className="rounded-[2rem] bg-white p-5 shadow-sm">
@@ -785,20 +757,20 @@ function ReviewStep({ formData }: { formData: FormData }) {
           <div>
             <p className="text-sm font-black text-[#d07b47]">Preview</p>
             <h3 className="mt-1 text-3xl font-black text-[#2d251f]">
-              {formData.pet.name || "Unnamed cat"}
+              {pet.name || "Unnamed cat"}
             </h3>
             <p className="mt-1 font-medium text-[#74675d]">
-              Last seen {formData.lostDate || "date unknown"} in {formData.lost_place.district || "area unknown"}{formData.lost_place.city ? `, ${formData.lost_place.city}` : ""}.
+              Last seen {lostDate || "date unknown"} in {lostPlace.district || "area unknown"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
             </p>
           </div>
           <Cat className="size-10 text-[#d07b47]" />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <ReviewCard title="Owner" items={[formData.owner.name, formData.owner.email, formData.owner.phone_number ?? ""]} />
-        <ReviewCard title="Pet" items={[formData.pet.breed, formData.pet.breed_group, formData.pet.gender, formData.pet.size]} />
-        <ReviewCard title="Details" items={[formData.pet.appearance, formData.pet.description, formData.pet.unique_details]} />
-        <ReviewCard title="Safety" items={[formData.pet.health_info, formData.pet.behavior]} />
+        <ReviewCard title="Owner" items={[petCase.owner.name, petCase.owner.email, petCase.owner.phone_number ?? ""]} />
+        <ReviewCard title="Pet" items={[pet.breed, pet.breed_group, pet.gender, pet.size ?? ""]} />
+        <ReviewCard title="Details" items={[pet.appearance ?? "", pet.description ?? "", pet.unique_details ?? ""]} />
+        <ReviewCard title="Safety" items={[pet.health_info ?? "", pet.behavior ?? ""]} />
       </div>
       <Separator className="bg-[#eadfd1]" />
       <p className="text-sm font-medium text-[#74675d]">Saved after each completed schema step.</p>

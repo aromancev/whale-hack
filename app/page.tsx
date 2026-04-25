@@ -1,7 +1,12 @@
 import { MissingCatForm } from "@/components/missing-cat-form";
+import type { Case } from "@/domain/case";
 import { PawPrint, TriangleAlert } from "lucide-react";
 
 export default function Home() {
+  return <IntakePage />;
+}
+
+export function IntakePage({ initialCase }: { initialCase?: Case }) {
   return (
     <main className="relative min-h-svh overflow-hidden bg-[#fff8ec] px-4 py-5 text-[#2d251f] sm:px-6 sm:py-8">
       <div className="absolute -left-24 top-10 size-64 rounded-full bg-[#f8c8a7]/60 blur-3xl" />
@@ -25,7 +30,7 @@ export default function Home() {
         </div>
       </div>
       <div className="relative">
-        <MissingCatForm />
+        <MissingCatForm initialCase={initialCase} />
       </div>
     </main>
   );
