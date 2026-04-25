@@ -165,7 +165,7 @@ export function LastSeenStep({
           <Input value={lostPlace.country.toUpperCase()} readOnly aria-readonly="true" className="bg-white/60 text-[#74675d]" />
         </Field>
         <Field label="City" required error={fieldErrors["lost_place.city"]}>
-          <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Brooklyn" aria-invalid={Boolean(fieldErrors["lost_place.city"])} />
+          <Input value={lostPlace.city} onChange={(event) => updateLostPlace("city", event.target.value)} placeholder="Amsterdam" aria-invalid={Boolean(fieldErrors["lost_place.city"])} />
         </Field>
       </TwoColumnFields>
       {mapsApiKey ? (

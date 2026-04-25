@@ -10,6 +10,7 @@ import {
   type ViewState,
 } from "@/components/found-cat";
 import type { FoundPetFormValues } from "@/components/found-cat";
+import { CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
 import type { Report } from "@/domain/report";
 import type { CaseMatch } from "@/service/cases";
 import { useState } from "react";
@@ -192,7 +193,7 @@ function createFormValues(
     ...createEmptyFormValues(),
     photoDataUrl,
     breed: enriched?.breed ?? "",
-    breed_group: enriched?.breed_group ?? "",
+    breed_group: getBreedGroup(enriched?.breed) ?? enriched?.breed_group ?? "",
     color: enriched?.color ?? "",
     unique_details: enriched?.unique_details ?? "",
     age_group: enriched?.age_group ?? "",
@@ -231,7 +232,7 @@ function createEmptyFormValues(): FoundPetFormValues {
     age_group: "",
     collar: "unknown",
     size: "",
-    foundAt: "",
+    foundAt: toCurrentDateTimeLocalInput(),
     city: "",
     district: "",
     fullAddress: "",
@@ -239,10 +240,12 @@ function createEmptyFormValues(): FoundPetFormValues {
 }
 
 function toPetPayload(values: FoundPetFormValues) {
+  const breed = values.breed.trim();
+
   return {
     species: "cat" as const,
-    breed: values.breed.trim(),
-    breed_group: values.breed_group.trim(),
+    breed,
+    breed_group: getBreedGroup(breed) ?? values.breed_group.trim(),
     photo_urls: [],
     color: optionalString(values.color),
     unique_details: optionalString(values.unique_details),
@@ -302,6 +305,12 @@ function toDateTimeLocalInput(value: string) {
   return offsetDate.toISOString().slice(0, 16);
 }
 
+function toCurrentDateTimeLocalInput() {
+  const date = new Date();
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
 function booleanToCollarValue(value?: boolean): FoundPetFormValues["collar"] {
   if (value === true) {
     return "yes";
@@ -340,6 +349,12 @@ function formatLabel(value?: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function getBreedGroup(value?: string) {
+  return value && value in CAT_BREED_TO_GROUP
+    ? CAT_BREED_TO_GROUP[value as CatBreed]
+    : undefined;
 }
 
 async function getErrorMessage(response: Response, fallback: string) {

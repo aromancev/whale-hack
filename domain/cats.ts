@@ -124,7 +124,7 @@ export const CAT_BREED_TO_GROUP = Object.fromEntries(
 
 const catBreedGroups = Object.keys(CAT_BREEDS_BY_GROUP) as [CatBreedGroup, ...CatBreedGroup[]];
 const catBreeds = Object.values(CAT_BREEDS_BY_GROUP).flat() as [CatBreed, ...CatBreed[]];
-const catColors = [
+export const CAT_COLORS = [
     "black",
     "white",
     "gray",
@@ -147,7 +147,7 @@ const catColors = [
 
 export const CatBreedGroupSchema = z.enum(catBreedGroups);
 export const CatBreedSchema = z.enum(catBreeds);
-export const CatColorSchema = z.enum(catColors);
+export const CatColorSchema = z.enum(CAT_COLORS);
 
 export const CatSchema = PetSchema.extend({
     breed_group: CatBreedGroupSchema,

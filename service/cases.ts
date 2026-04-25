@@ -3,12 +3,6 @@ import { petCaseRepository, type PetCaseRepository } from "@/domain/case-reposit
 import type { Pet } from "@/domain/pets";
 import z from "zod";
 
-type WeightedMatch = {
-    matchedWeight: number;
-    totalWeight: number;
-    reasons: string[];
-}
-
 export const CaseMatchSchema = z.object({
     case: CaseSchema,
     score: z.number().min(0).max(1),
@@ -72,14 +66,14 @@ export class CasesService {
                         reasons: ['Wrong species'],
                     }
                 }
-                if (petCase.pet?.breed_group !== pet.breed_group) {
+                if (pet.breed && petCase.pet.breed && normalizeMatchValue(petCase.pet.breed) !== normalizeMatchValue(pet.breed)) {
                     return {
                         case: petCase,
                         score: 0,
                         reasons: ['Wrong breed'],
                     }
                 }
-                if (petCase.pet?.color !== pet.color) {
+                if (pet.color && petCase.pet.color && normalizeMatchValue(petCase.pet.color) !== normalizeMatchValue(pet.color)) {
                     return {
                         case: petCase,
                         score: 0,
@@ -95,12 +89,6 @@ export class CasesService {
                 if (petCase.pet.size === pet.size) {
                     score += 0.1
                     reasons.push('Similar size')
-                }
-
-                maxScore += 0.1
-                if (petCase.pet.age_group === pet.age_group) {
-                    score += 0.1
-                    reasons.push('Similar age group')
                 }
 
                 maxScore += 0.1
@@ -160,3 +148,7 @@ export class CasesService {
 }
 
 export const casesService = new CasesService(petCaseRepository);
+
+function normalizeMatchValue(value: string) {
+    return value.trim().toLowerCase().replace(/\s+/g, "_");
+}

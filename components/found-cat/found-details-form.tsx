@@ -2,10 +2,34 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select as UiSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { RotateCcw, Search, Sparkles } from "lucide-react";
+import { CAT_BREEDS_BY_GROUP, CAT_COLORS } from "@/domain/cats";
+import { RotateCcw, Search, Sparkles, XIcon } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 import type { FoundPetFormValues } from "./types";
+
+const breedOptions = Object.values(CAT_BREEDS_BY_GROUP)
+  .flat()
+  .map((breed) => ({ value: breed, label: formatLabel(breed) }));
+const colorOptions = CAT_COLORS.map((color) => ({ value: color, label: formatLabel(color) }));
+const sizeOptions = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
+const collarOptions = [
+  { value: "unknown", label: "Unknown" },
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
 
 export function FoundDetailsForm({
   values,
@@ -20,6 +44,15 @@ export function FoundDetailsForm({
   onReset: () => void;
   onSubmit: () => void;
 }) {
+  const [breedSearch, setBreedSearch] = useState("");
+  const [colorSearch, setColorSearch] = useState("");
+  const selectedBreed = findOptionLabel(breedOptions, values.breed);
+  const selectedColor = findOptionLabel(colorOptions, values.color);
+  const selectedSize = findOptionLabel(sizeOptions, values.size);
+  const selectedCollar = findOptionLabel(collarOptions, values.collar);
+  const visibleBreedOptions = breedOptions.filter((option) => optionMatchesSearch(option.label, breedSearch));
+  const visibleColorOptions = colorOptions.filter((option) => optionMatchesSearch(option.label, colorSearch));
+
   return (
     <div>
       <span className="inline-flex items-center gap-2 rounded-full bg-[#fff3df] px-3 py-1 text-xs font-black uppercase tracking-wide text-[#7d5b43]">
@@ -56,57 +89,44 @@ export function FoundDetailsForm({
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Breed">
-                <Input
-                  value={values.breed}
-                  onChange={(event) => onChange("breed", event.target.value)}
-                  placeholder="siamese"
-                />
-              </Field>
-              <Field label="Breed group">
-                <Input
-                  value={values.breed_group}
-                  onChange={(event) => onChange("breed_group", event.target.value)}
-                  placeholder="slim_big_ears"
+                <SearchableSelect
+                  value={selectedBreed}
+                  placeholder="Search breed, e.g. Siamese"
+                  searchPlaceholder="Search breed"
+                  search={breedSearch}
+                  emptyMessage="No breeds found."
+                  options={visibleBreedOptions}
+                  onSearchChange={setBreedSearch}
+                  onValueChange={(label) => onChange("breed", findOptionValue(breedOptions, label) ?? "")}
                 />
               </Field>
               <Field label="Color">
-                <Input
-                  value={values.color}
-                  onChange={(event) => onChange("color", event.target.value)}
-                  placeholder="cream"
+                <SearchableSelect
+                  value={selectedColor}
+                  placeholder="Search color, e.g. Cream"
+                  searchPlaceholder="Search color"
+                  search={colorSearch}
+                  emptyMessage="No colors found."
+                  options={visibleColorOptions}
+                  onSearchChange={setColorSearch}
+                  onValueChange={(label) => onChange("color", findOptionValue(colorOptions, label) ?? "")}
                 />
               </Field>
-              <Field label="Age group">
-                <Select
-                  value={values.age_group}
-                  onChange={(event) => onChange("age_group", event.target.value as FoundPetFormValues["age_group"])}
-                >
-                  <option value="">Unknown</option>
-                  <option value="young">Young</option>
-                  <option value="adult">Adult</option>
-                  <option value="senior">Senior</option>
-                </Select>
-              </Field>
               <Field label="Size">
-                <Select
-                  value={values.size}
-                  onChange={(event) => onChange("size", event.target.value as FoundPetFormValues["size"])}
-                >
-                  <option value="">Unknown</option>
-                  <option value="small">Small</option>
-                  <option value="medium">Medium</option>
-                  <option value="large">Large</option>
-                </Select>
+                <SimpleSelect
+                  value={selectedSize}
+                  placeholder="Unknown"
+                  options={sizeOptions}
+                  onValueChange={(label) => onChange("size", (findOptionValue(sizeOptions, label) ?? "") as FoundPetFormValues["size"])}
+                />
               </Field>
               <Field label="Collar">
-                <Select
-                  value={values.collar}
-                  onChange={(event) => onChange("collar", event.target.value as FoundPetFormValues["collar"])}
-                >
-                  <option value="unknown">Unknown</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </Select>
+                <SimpleSelect
+                  value={selectedCollar}
+                  placeholder="Unknown"
+                  options={collarOptions}
+                  onValueChange={(label) => onChange("collar", (findOptionValue(collarOptions, label) ?? "unknown") as FoundPetFormValues["collar"])}
+                />
               </Field>
               <div className="sm:col-span-2">
                 <Field label="Unique details">
@@ -139,20 +159,6 @@ export function FoundDetailsForm({
                   onChange={(event) => onChange("city", event.target.value)}
                   placeholder="Amsterdam"
                   required
-                />
-              </Field>
-              <Field label="District or area">
-                <Input
-                  value={values.district}
-                  onChange={(event) => onChange("district", event.target.value)}
-                  placeholder="Centrum"
-                />
-              </Field>
-              <Field label="Exact place">
-                <Input
-                  value={values.fullAddress}
-                  onChange={(event) => onChange("fullAddress", event.target.value)}
-                  placeholder="Near Vondelpark"
                 />
               </Field>
             </div>
@@ -200,11 +206,143 @@ function Field({
   );
 }
 
-function Select({ className = "", ...props }: React.ComponentProps<"select">) {
+function SearchableSelect({
+  emptyMessage,
+  onSearchChange,
+  onValueChange,
+  options,
+  placeholder,
+  search,
+  searchPlaceholder,
+  value,
+}: {
+  emptyMessage: string;
+  onSearchChange: (value: string) => void;
+  onValueChange: (value: string | null) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  search: string;
+  searchPlaceholder: string;
+  value: string | null;
+}) {
   return (
-    <select
-      className={`h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-[#f8c8a7]/60 ${className}`}
-      {...props}
-    />
+    <UiSelect value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false} className="h-72 max-h-72 rounded-[1.25rem] bg-white p-2">
+        <div className="sticky top-0 z-10 bg-white p-1">
+          <div className="relative">
+            <Input
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              onKeyDown={(event) => event.stopPropagation()}
+              placeholder={searchPlaceholder}
+              className="pr-11"
+            />
+            {search ? (
+              <button
+                type="button"
+                aria-label={`Clear ${searchPlaceholder.toLowerCase()}`}
+                className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[#74675d] transition-colors hover:bg-[#f4ece5] hover:text-[#2d251f] focus-visible:ring-3 focus-visible:ring-[#f8c8a7]/60 focus-visible:outline-none"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onSearchChange("")}
+              >
+                <XIcon className="size-4" />
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {options.length ? (
+          options.map((option) => (
+            <SelectItem key={option.value} value={option.label} className="rounded-xl px-3 py-2 text-[#2d251f]">
+              {option.label}
+            </SelectItem>
+          ))
+        ) : (
+          <p className="px-3 py-2 text-sm font-medium text-[#74675d]">{emptyMessage}</p>
+        )}
+      </SelectContent>
+    </UiSelect>
   );
+}
+
+function SimpleSelect({
+  onValueChange,
+  options,
+  placeholder,
+  value,
+}: {
+  onValueChange: (value: string | null) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  value: string | null;
+}) {
+  return (
+    <UiSelect value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false} className="rounded-[1.25rem] bg-white p-2">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.label} className="rounded-xl px-3 py-2 text-[#2d251f]">
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </UiSelect>
+  );
+}
+
+function formatLabel(value: string) {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function findOptionLabel(options: { value: string; label: string }[], value: string) {
+  return options.find((option) => option.value === value || option.label.toLowerCase() === value.toLowerCase())?.label ?? null;
+}
+
+function findOptionValue(options: { value: string; label: string }[], label: string | null) {
+  if (!label) {
+    return undefined;
+  }
+
+  const normalizedLabel = label.trim().toLowerCase();
+  return options.find((option) => option.label.toLowerCase() === normalizedLabel || option.value === normalizedLabel)?.value;
+}
+
+function optionMatchesSearch(label: string, search: string) {
+  const normalizedSearch = normalizeSearchText(search);
+
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const normalizedLabel = normalizeSearchText(label);
+
+  if (normalizedLabel.includes(normalizedSearch)) {
+    return true;
+  }
+
+  let searchIndex = 0;
+
+  for (const symbol of normalizedLabel) {
+    if (symbol === normalizedSearch[searchIndex]) {
+      searchIndex += 1;
+    }
+
+    if (searchIndex === normalizedSearch.length) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }

@@ -66,7 +66,6 @@ describe("CasesService", () => {
       status: "open",
       pet: {
         ...createPet(),
-        breed: "Persian",
         color: "black",
       },
       lost_time: "2026-03-01T12:00:00.000Z" as Case["lost_time"],
@@ -154,11 +153,11 @@ describe("CasesService", () => {
     const matches = await service.matchPet(pet, sighting, "nl", "Amsterdam");
 
     expect(matches.map((match) => ({ id: match.case.id, score: match.score }))).toEqual([
-      { id: "case-24h", score: 0.7499999999999999 },
-      { id: "case-2d", score: 0.625 },
-      { id: "case-week", score: 0.37500000000000006 },
-      { id: "case-month", score: 0.25 },
-      { id: "case-over-month", score: 0.125 },
+      { id: "case-24h", score: 0.7142857142857143 },
+      { id: "case-2d", score: 0.5714285714285715 },
+      { id: "case-week", score: 0.28571428571428575 },
+      { id: "case-month", score: 0.14285714285714288 },
+      { id: "case-over-month", score: 0 },
     ]);
   });
 });

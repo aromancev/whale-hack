@@ -486,22 +486,17 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   if (submitted) {
     return (
       <Card className="mx-auto w-full max-w-[460px] overflow-hidden rounded-[2.5rem] border-0 bg-white shadow-2xl shadow-[#d9b28b]/25 md:max-w-3xl">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex size-24 items-center justify-center rounded-[2rem] bg-[#bfe8d5] text-[#245643]">
+        <CardHeader className="items-center gap-4 text-center">
+          <div className="mb-2 flex size-24 items-center justify-center justify-self-center rounded-[2rem] bg-[#bfe8d5] text-[#245643]">
             <CheckCircle2 className="size-11" />
           </div>
           <CardTitle className="text-4xl font-black tracking-tight text-[#2d251f]">
             Public case ready
           </CardTitle>
-          <CardDescription className="max-w-xs text-base font-medium text-[#74675d]">
+          <CardDescription className="max-w-xs justify-self-center text-center text-base font-medium leading-relaxed text-[#74675d]">
             Your report is now live and ready to share.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-[2rem] bg-[#f0fbf5] p-5 text-sm font-medium text-[#245643]">
-            <span className="font-semibold">Public case:</span> {pet.name || "Your cat"} last seen in {lostPlace.district || "your area"}{lostPlace.city ? `, ${lostPlace.city}` : ""}.
-          </div>
-        </CardContent>
         <CardFooter className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={() => window.location.assign(`/public-case/${encodeURIComponent(petCase.id)}`)}>
             View public case
