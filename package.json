@@ -10,7 +10,8 @@
     "test": "vitest run --tagsFilter='!external'",
     "test:external": "vitest run --tagsFilter=external",
     "fetch:cats": "node scripts/fetch-amivedi-cats.mjs",
-    "populate:cats": "tsx -- ./scripts/populate-cats.ts",
+    "populate:cats": "tsx --env-file=.env ./scripts/populate-cats.ts",
+    "import:cases": "tsx --env-file=.env ./scripts/import-cases.ts",
     "purge:cats": "tsx -- ./scripts/purge-cases.ts"
   },
   "dependencies": {
