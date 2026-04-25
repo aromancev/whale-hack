@@ -1,4 +1,5 @@
-import { CaseSchema, petCaseRepository } from "@/domain/case";
+import { CaseSchema } from "@/domain/case";
+import { casesService } from "@/service/cases";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const petCase = await petCaseRepository.save(result.data);
+  const petCase = await casesService.save(result.data);
 
   return Response.json({ id: petCase.id });
 }
