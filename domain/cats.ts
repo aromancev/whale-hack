@@ -1,112 +1,106 @@
 import { z } from "zod";
-import { PetSchema } from "./pets.js";
+import { PetSchema } from "./pets";
 
 export const CAT_BREEDS_BY_GROUP = {
     flat_face_fluffy: [
-            'persian',
-            'himalayan',
-            'exotic_shorthair',
-        ],
-        
-        big_forest_cat: [
-            'maine_coon',
-            'norwegian_forest_cat',
-            'siberian',
-        ],
-        
-        blue_eyes_point_fluffy: [
-            'ragdoll',
-            'birman',
-            'balinese',
-        ],
-        
-        round_teddy_cat: [
-            'british_shorthair',
-            'british_longhair',
-            'scottish_fold',
-            'scottish_straight',
-            'chartreux',
-        ],
-        
-        slim_big_ears: [
-            'siamese',
-            'thai',
-            'oriental_shorthair',
-            'oriental_longhair',
-            'peterbald',
-        ],
-        
-        leopard_cat: [
-            'bengal',
-            'ocicat',
-            'egyptian_mau',
-            'savannah',
-            'toyger',
-            'chausie',
-        ],
-        
-        curly_hairless_cat: [
-            'cornish_rex',
-            'devon_rex',
-            'laperm',
-            'selkirk_rex',
-            'sphynx',
-            'donskoy',
-        ],
-        
-        athletic_fine_cat: [
-            'abyssinian',
-            'somali',
-            'turkish_angora',
-        ],
-        
-        compact_sleek_cat: [
-            'burmese',
-            'bombay',
-            'tonkinese',
-            'havana_brown',
-            'singapura',
-            'korat',
-            'russian_blue',
-            'burmilla',
-        ],
-        
-        tail_different_cat: [
-            'japanese_bobtail',
-            'kurilian_bobtail',
-            'manx',
-            'cymric',
-            'american_bobtail',
-        ],
-        
-        classic_house_cat: [
-            'european_shorthair',
-            'american_shorthair',
-            'american_wirehair',
-            'domestic_shorthair',
-            'domestic_mediumhair',
-            'domestic_longhair',
-        ],
-        
-        turkish_van: [
-            'turkish_van',
-        ],
-        
-        nebelung: [
-            'nebelung',
-        ],
-        
-        pixie_bob: [
-            'pixie_bob',
-        ],
-        
-        lykoi: [
-            'lykoi',
-        ],
-        
-        york_chocolate: [
-            'york_chocolate',
-        ],
+        'persian',
+        'himalayan',
+        'exotic_shorthair',
+    ],
+
+    big_forest_cat: [
+        'maine_coon',
+        'norwegian_forest_cat',
+        'siberian',
+    ],
+
+    blue_eyes_point_fluffy: [
+        'ragdoll',
+        'birman',
+        'balinese',
+    ],
+
+    round_teddy_cat: [
+        'british_shorthair',
+        'british_longhair',
+        'scottish_fold',
+        'scottish_straight',
+        'chartreux',
+    ],
+
+    slim_big_ears: [
+        'siamese',
+        'thai',
+        'oriental_shorthair',
+        'oriental_longhair',
+        'peterbald',
+    ],
+
+    leopard_cat: [
+        'bengal',
+        'ocicat',
+        'egyptian_mau',
+        'savannah',
+        'toyger',
+        'chausie',
+    ],
+
+    curly_hairless_cat: [
+        'cornish_rex',
+        'devon_rex',
+        'laperm',
+        'selkirk_rex',
+        'sphynx',
+        'donskoy',
+    ],
+
+    athletic_fine_cat: [
+        'abyssinian',
+        'somali',
+        'turkish_angora',
+    ],
+
+    compact_sleek_cat: [
+        'burmese',
+        'bombay',
+        'tonkinese',
+        'havana_brown',
+        'singapura',
+        'korat',
+        'russian_blue',
+        'burmilla',
+    ],
+
+    tail_different_cat: [
+        'japanese_bobtail',
+        'kurilian_bobtail',
+        'manx',
+        'cymric',
+        'american_bobtail',
+    ],
+
+    turkish_van: [
+        'turkish_van',
+    ],
+
+    nebelung: [
+        'nebelung',
+    ],
+
+    pixie_bob: [
+        'pixie_bob',
+    ],
+
+    lykoi: [
+        'lykoi',
+    ],
+
+    york_chocolate: [
+        'york_chocolate',
+    ],
+    domestic_cat: [
+        'domestic_cat',
+    ],
 } as const
 
 export type CatBreedGroup = keyof typeof CAT_BREEDS_BY_GROUP

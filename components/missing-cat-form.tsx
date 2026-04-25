@@ -26,11 +26,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { CAT_BREEDS_BY_GROUP, CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
 import type { Address, Case } from "@/domain/case";
 import type { Owner } from "@/domain/owner";
 import type { Pet } from "@/domain/pets";
@@ -107,6 +116,13 @@ const genderOptions: Pet["gender"][] = ["female", "male"];
 const ageGroupOptions: NonNullable<Pet["age_group"]>[] = ["yong", "adult", "senior"];
 const yesNoOptions = ["Yes", "No"];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const unknownBreed = "domestic_cat" satisfies CatBreed;
+const catBreedOptions = Object.values(CAT_BREEDS_BY_GROUP)
+  .flat()
+  .map((breed) => ({
+    value: breed,
+    label: formatCatOption(breed),
+  }));
 const progressLabels = [
   "Missing cat",
   "Contact added",
@@ -122,6 +138,7 @@ const progressLabels = [
 
 export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const [petCase, setPetCase] = useState<Case>(() => initialCase ?? createEmptyCase());
+  const [breedSearch, setBreedSearch] = useState(() => formatCatOption(initialCase?.pet?.breed ?? ""));
   const [currentStep, setCurrentStep] = useState(() => initialCase ? 2 : 0);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
@@ -141,6 +158,10 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const lostPlace = petCase.lost_place ?? createEmptyAddress();
   const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
   const lostTime = petCase.lost_time ? petCase.lost_time.slice(11, 16) : "";
+  const isUnknownBreed = pet.breed === unknownBreed && pet.breed_group === CAT_BREED_TO_GROUP[unknownBreed];
+  const selectedBreed = findCatBreed(pet.breed);
+  const selectedBreedLabel = selectedBreed ? formatCatOption(selectedBreed) : null;
+  const visibleBreedOptions = catBreedOptions.filter((breed) => breed.label.toLowerCase().includes(breedSearch.trim().toLowerCase()));
 
   function updateReward(value: string) {
     setPetCase((current) => ({
@@ -165,8 +186,12 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       updated_at: createTimestamp(),
       owner: { ...current.owner, [key]: value },
     }));
-    if (key === "name" || key === "email") {
-      clearFieldError(`owner.${key}`);
+    if (key === "name") {
+      clearFieldError("owner.name");
+    }
+
+    if (key === "email") {
+      clearFieldError("owner.email");
     }
     setError("");
   }
@@ -177,9 +202,71 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
       updated_at: createTimestamp(),
       pet: { ...(current.pet ?? createEmptyPet()), [key]: value },
     }));
-    if (key === "name" || key === "gender") {
-      clearFieldError(`pet.${key}`);
+    if (key === "name") {
+      clearFieldError("pet.name");
     }
+
+    if (key === "gender") {
+      clearFieldError("pet.gender");
+    }
+    setError("");
+  }
+
+  function updateBreedSearch(value: string) {
+    setBreedSearch(value);
+    setError("");
+  }
+
+  function updateBreed(value: string | null) {
+    if (!value) {
+      return;
+    }
+
+    const selectedValue = findCatBreed(value);
+
+    if (!selectedValue) {
+      return;
+    }
+
+    setBreedSearch(formatCatOption(selectedValue));
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      pet: {
+        ...(current.pet ?? createEmptyPet()),
+        breed: selectedValue,
+        breed_group: CAT_BREED_TO_GROUP[selectedValue],
+      },
+    }));
+    setError("");
+  }
+
+  function updateUnknownBreed(checked: boolean) {
+    if (checked) {
+      setBreedSearch(formatCatOption(unknownBreed));
+      setPetCase((current) => ({
+        ...current,
+        updated_at: createTimestamp(),
+        pet: {
+          ...(current.pet ?? createEmptyPet()),
+          breed: unknownBreed,
+          breed_group: CAT_BREED_TO_GROUP[unknownBreed],
+        },
+      }));
+      setError("");
+      return;
+    }
+
+    setBreedSearch("");
+    setPetCase((current) => ({
+      ...current,
+      updated_at: createTimestamp(),
+      pet: {
+        ...(current.pet ?? createEmptyPet()),
+        breed: "",
+        breed_group: "",
+      },
+    }));
     setError("");
   }
 
@@ -452,14 +539,31 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
                 <OptionGroup options={genderOptions} value={pet.gender} onSelect={(value) => updatePet("gender", value as Pet["gender"])} />
               </Field>
             </TwoColumnFields>
-            <TwoColumnFields>
-              <Field label="Breed">
-                <Input value={pet.breed} onChange={(event) => updatePet("breed", event.target.value)} placeholder="Tabby, Siamese, mixed" />
-              </Field>
-              <Field label="Breed group">
-                <Input value={pet.breed_group} onChange={(event) => updatePet("breed_group", event.target.value)} placeholder="Domestic short hair" />
-              </Field>
-            </TwoColumnFields>
+            <Field label="Breed">
+              <Select value={selectedBreedLabel} onValueChange={updateBreed}>
+                <SelectTrigger className="h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm" disabled={isUnknownBreed}>
+                  <SelectValue placeholder="Search breed, e.g. Siamese" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72 rounded-[1.25rem] bg-white p-2">
+                  <div className="sticky top-0 z-10 bg-white p-1">
+                    <Input value={breedSearch} onChange={(event) => updateBreedSearch(event.target.value)} placeholder="Search breed" />
+                  </div>
+                  {visibleBreedOptions.length ? (
+                    visibleBreedOptions.map((breed) => (
+                      <SelectItem key={breed.value} value={breed.label} className="rounded-xl px-3 py-2 text-[#2d251f]">
+                        {breed.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <p className="px-3 py-2 text-sm font-medium text-[#74675d]">No breeds found.</p>
+                  )}
+                </SelectContent>
+              </Select>
+              <label className="flex items-center gap-2 text-sm font-semibold text-[#74675d]">
+                <Checkbox checked={isUnknownBreed} onCheckedChange={(checked) => updateUnknownBreed(checked === true)} />
+                I don&apos;t know
+              </label>
+            </Field>
           </div>
         );
       case 3:
@@ -560,8 +664,8 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
         return (
           <div className="space-y-5">
             <TwoColumnFields>
-                <OptionGroup label="Microchipped" options={yesNoOptions} value={booleanToYesNo(pet.chipped)} onSelect={(value) => updatePet("chipped", yesNoToBoolean(value))} />
-                <OptionGroup label="Wearing collar" options={yesNoOptions} value={booleanToYesNo(pet.collar)} onSelect={(value) => updatePet("collar", yesNoToBoolean(value))} />
+              <OptionGroup label="Microchipped" options={yesNoOptions} value={booleanToYesNo(pet.chipped)} onSelect={(value) => updatePet("chipped", yesNoToBoolean(value))} />
+              <OptionGroup label="Wearing collar" options={yesNoOptions} value={booleanToYesNo(pet.collar)} onSelect={(value) => updatePet("collar", yesNoToBoolean(value))} />
             </TwoColumnFields>
             <Field label="Chip number">
               <Input value={pet.chip_number ?? ""} onChange={(event) => updatePet("chip_number", event.target.value)} placeholder="Optional" />
@@ -637,7 +741,7 @@ function createEmptyPet(): Pet {
     breed: "",
     breed_group: "",
     photo_urls: [],
-    gender: "female",
+    gender: "" as Pet["gender"],
   };
 }
 
@@ -661,6 +765,21 @@ function createLostTime(date: string, time: string) {
   }
 
   return new Date(`${date}T${time || "00:00"}`).toISOString() as Case["lost_time"];
+}
+
+function formatCatOption(value: string) {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function findCatBreed(value: string) {
+  const normalizedValue = value.trim().toLowerCase();
+  const option = catBreedOptions.find((breed) => breed.label.toLowerCase() === normalizedValue || breed.value === normalizedValue);
+
+  return option?.value;
 }
 
 function yesNoToBoolean(value: string) {
