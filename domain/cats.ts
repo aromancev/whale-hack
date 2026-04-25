@@ -124,23 +124,36 @@ export const CAT_BREED_TO_GROUP = Object.fromEntries(
 
 const catBreedGroups = Object.keys(CAT_BREEDS_BY_GROUP) as [CatBreedGroup, ...CatBreedGroup[]];
 const catBreeds = Object.values(CAT_BREEDS_BY_GROUP).flat() as [CatBreed, ...CatBreed[]];
+const catColors = [
+    "black",
+    "white",
+    "gray",
+    "orange",
+    "brown",
+    "cream",
+    "black_and_white",
+    "gray_and_white",
+    "orange_and_white",
+    "brown_and_white",
+    "brown_tabby",
+    "gray_tabby",
+    "orange_tabby",
+    "tabby_and_white",
+    "brown_spotted",
+    "gray_spotted",
+    "calico",
+    "tortoiseshell",
+] as const;
 
 export const CatBreedGroupSchema = z.enum(catBreedGroups);
 export const CatBreedSchema = z.enum(catBreeds);
+export const CatColorSchema = z.enum(catColors);
 
 export const CatSchema = PetSchema.extend({
     breed_group: CatBreedGroupSchema,
     breed: CatBreedSchema,
-}).superRefine((cat, ctx) => {
-    if (CAT_BREED_TO_GROUP[cat.breed] === cat.breed_group) {
-        return;
-    }
-
-    ctx.addIssue({
-        code: "custom",
-        path: ["breed"],
-        message: `Breed '${cat.breed}' does not belong to breed group '${cat.breed_group}'`,
-    });
+    color: CatColorSchema.optional(),
 });
 
 export type Cat = z.infer<typeof CatSchema>;
+export type CatColor = z.infer<typeof CatColorSchema>;
