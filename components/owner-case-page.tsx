@@ -468,7 +468,7 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
                 </Button>
               )}
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <Link href={`/public-case/${encodeURIComponent(petCase.id)}`} className={ownerPublicExperimentActionClass}>
+                <Link href={`/public-case/${encodeURIComponent(petCase.id)}?from=edit`} className={ownerPublicExperimentActionClass}>
                   Public page
                 </Link>
                 <Button disabled={isSaving} onClick={() => void saveCase()} className={ownerSaveActionClass}>
