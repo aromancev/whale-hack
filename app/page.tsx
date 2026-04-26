@@ -50,6 +50,15 @@ export default function Home() {
             </span>
           </Link>
         </div>
+
+        <a
+          href="/report.html"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex w-full max-w-3xl items-center justify-center rounded-2xl border-2 border-[#7f6af2] bg-white/80 px-6 py-4 text-lg font-black tracking-tight text-[#4b3db8] shadow-[0_12px_0_#cdc4ff] transition duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_18px_0_#b1a4ff] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7f6af2]/30"
+        >
+          Missing Pets Report
+        </a>
       </section>
 
       <div className="home-cat pointer-events-none absolute bottom-0 right-0 z-0 h-64 w-64 translate-x-8 translate-y-7 sm:h-80 sm:w-80 sm:translate-x-6 sm:translate-y-10 lg:h-[26rem] lg:w-[26rem]" aria-hidden="true">
