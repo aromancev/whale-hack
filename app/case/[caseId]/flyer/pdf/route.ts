@@ -1,5 +1,4 @@
 import {
-  formatAddress,
   formatLostTime,
   formatValue,
 } from "@/app/public-case/public-case-utils";
@@ -15,6 +14,21 @@ const PAGE_MARGIN = 36;
 const CONTENT_GAP = 18;
 const RIGHT_COLUMN_WIDTH = 170;
 const LEFT_COLUMN_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2 - RIGHT_COLUMN_WIDTH - CONTENT_GAP;
+
+const COLORS = {
+  page: rgb(1, 0.97, 0.93),
+  sheet: rgb(1, 1, 1),
+  ink: rgb(0.18, 0.15, 0.12),
+  muted: rgb(0.45, 0.4, 0.36),
+  border: rgb(0.91, 0.84, 0.75),
+  orange: rgb(0.82, 0.48, 0.28),
+  orangeSoft: rgb(0.96, 0.78, 0.65),
+  green: rgb(0.14, 0.34, 0.26),
+  greenSoft: rgb(0.75, 0.91, 0.84),
+  greenPale: rgb(0.95, 0.98, 0.96),
+  cream: rgb(0.98, 0.93, 0.86),
+  red: rgb(0.72, 0.11, 0.11),
+};
 
 export async function GET(
   request: Request,
@@ -72,7 +86,7 @@ async function buildFlyerPdf({
     y: cursorY,
     size: 32,
     font: boldFont,
-    color: rgb(0.72, 0.11, 0.11),
+    color: COLORS.red,
   });
 
   const photoTop = cursorY - 8;
@@ -84,6 +98,8 @@ async function buildFlyerPdf({
     y: photoTop - photoHeight,
     width: LEFT_COLUMN_WIDTH,
     height: photoHeight,
+    petName,
+    regularFont: font,
     font: boldFont,
   });
 
@@ -100,7 +116,7 @@ async function buildFlyerPdf({
   });
 
   const facts = [
-    ["LAST SEEN", formatAddress(petCase?.lost_place)],
+    ["LAST SEEN", petCase?.lost_place?.city || "City unknown"],
     ["LOST", formatLostTime(petCase?.lost_time)],
     ["COLOR", formatValue(pet?.color)],
     ["BREED", formatValue(pet?.breed)],
@@ -154,17 +170,53 @@ function drawBackground(page: PDFPageLike) {
     y: 0,
     width: PAGE_WIDTH,
     height: PAGE_HEIGHT,
-    color: rgb(0.97, 0.95, 0.92),
+    color: COLORS.page,
   });
 
-  page.drawRectangle({
+  page.drawEllipse({
+    x: -12,
+    y: PAGE_HEIGHT - 92,
+    xScale: 92,
+    yScale: 76,
+    color: COLORS.orangeSoft,
+    opacity: 0.55,
+  });
+
+  page.drawEllipse({
+    x: PAGE_WIDTH - 52,
+    y: PAGE_HEIGHT - 240,
+    xScale: 112,
+    yScale: 90,
+    color: COLORS.greenSoft,
+    opacity: 0.6,
+  });
+
+  page.drawEllipse({
+    x: PAGE_WIDTH / 2,
+    y: 42,
+    xScale: 118,
+    yScale: 58,
+    color: rgb(1, 0.9, 0.66),
+    opacity: 0.55,
+  });
+
+  drawRoundedRect(page, {
     x: PAGE_MARGIN - 6,
     y: PAGE_MARGIN - 6,
     width: PAGE_WIDTH - PAGE_MARGIN * 2 + 12,
     height: PAGE_HEIGHT - PAGE_MARGIN * 2 + 12,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.9, 0.88, 0.84),
-    borderWidth: 1,
+    radius: 18,
+    color: COLORS.sheet,
+    borderColor: COLORS.border,
+    borderWidth: 2,
+  });
+
+  page.drawRectangle({
+    x: PAGE_MARGIN - 6,
+    y: PAGE_MARGIN - 11,
+    width: PAGE_WIDTH - PAGE_MARGIN * 2 + 12,
+    height: 5,
+    color: COLORS.orange,
   });
 }
 
@@ -175,6 +227,8 @@ function drawPhotoBox({
   y,
   width,
   height,
+  petName,
+  regularFont,
   font,
 }: {
   page: PDFPageLike;
@@ -183,25 +237,32 @@ function drawPhotoBox({
   y: number;
   width: number;
   height: number;
+  petName: string;
+  regularFont: FontLike;
   font: FontLike;
 }) {
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x,
     y,
     width,
     height,
-    color: rgb(0.98, 0.97, 0.95),
-    borderColor: rgb(0.9, 0.86, 0.81),
-    borderWidth: 1,
+    radius: 18,
+    color: COLORS.greenPale,
+    borderColor: COLORS.border,
+    borderWidth: 2,
   });
 
   if (!photo) {
-    page.drawText("PHOTO UNAVAILABLE", {
-      x: x + 18,
-      y: y + height / 2 - 6,
-      size: 14,
-      font,
-      color: rgb(0.55, 0.58, 0.62),
+    drawCatPlaceholder({
+      page,
+      x,
+      y,
+      width,
+      height,
+      title: "Photo coming soon",
+      subtitle: petName,
+      font: regularFont,
+      boldFont: font,
     });
     return;
   }
@@ -219,6 +280,118 @@ function drawPhotoBox({
     width: fitted.width,
     height: fitted.height,
   });
+}
+
+function drawCatPlaceholder({
+  page,
+  x,
+  y,
+  width,
+  height,
+  title,
+  subtitle,
+  font,
+  boldFont,
+}: {
+  page: PDFPageLike;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  title: string;
+  subtitle: string;
+  font: FontLike;
+  boldFont: FontLike;
+}) {
+  const centerX = x + width / 2;
+  const centerY = y + height / 2 + 14;
+
+  drawRoundedRect(page, {
+    x: x + 32,
+    y: y + 32,
+    width: width - 64,
+    height: height - 64,
+    radius: 22,
+    color: rgb(1, 1, 1),
+    borderColor: COLORS.orangeSoft,
+    borderWidth: 1.5,
+  });
+
+  drawOrangeCatPlaceholder({
+    page,
+    centerX,
+    centerY: centerY + 30,
+  });
+
+  drawCenteredText({
+    page,
+    text: title.toUpperCase(),
+    centerX,
+    y: centerY - 36,
+    size: 13,
+    font: boldFont,
+    color: COLORS.ink,
+  });
+  drawCenteredText({
+    page,
+    text: subtitle,
+    centerX,
+    y: centerY - 56,
+    size: 11,
+    font,
+    color: COLORS.muted,
+  });
+}
+
+function drawOrangeCatPlaceholder({
+  page,
+  centerX,
+  centerY,
+}: {
+  page: PDFPageLike;
+  centerX: number;
+  centerY: number;
+}) {
+  page.drawSvgPath([
+    `M ${centerX - 43} ${centerY + 3}`,
+    `L ${centerX - 34} ${centerY + 52}`,
+    `Q ${centerX - 22} ${centerY + 35} ${centerX - 12} ${centerY + 23}`,
+    "Z",
+  ].join(" "), {
+    color: COLORS.orange,
+    borderColor: COLORS.orange,
+    borderWidth: 1,
+  });
+  page.drawSvgPath([
+    `M ${centerX + 12} ${centerY + 23}`,
+    `Q ${centerX + 22} ${centerY + 35} ${centerX + 34} ${centerY + 52}`,
+    `L ${centerX + 43} ${centerY + 3}`,
+    "Z",
+  ].join(" "), {
+    color: COLORS.orange,
+    borderColor: COLORS.orange,
+    borderWidth: 1,
+  });
+  page.drawEllipse({
+    x: centerX,
+    y: centerY,
+    xScale: 42,
+    yScale: 34,
+    color: COLORS.orange,
+  });
+  page.drawCircle({ x: centerX - 15, y: centerY + 5, size: 3, color: COLORS.ink });
+  page.drawCircle({ x: centerX + 15, y: centerY + 5, size: 3, color: COLORS.ink });
+  page.drawEllipse({
+    x: centerX,
+    y: centerY - 8,
+    xScale: 4,
+    yScale: 3,
+    color: COLORS.ink,
+  });
+  page.drawLine({ start: { x: centerX - 7, y: centerY - 10 }, end: { x: centerX - 24, y: centerY - 7 }, thickness: 1, color: COLORS.ink });
+  page.drawLine({ start: { x: centerX - 7, y: centerY - 15 }, end: { x: centerX - 25, y: centerY - 17 }, thickness: 1, color: COLORS.ink });
+  page.drawLine({ start: { x: centerX + 7, y: centerY - 10 }, end: { x: centerX + 24, y: centerY - 7 }, thickness: 1, color: COLORS.ink });
+  page.drawLine({ start: { x: centerX + 7, y: centerY - 15 }, end: { x: centerX + 25, y: centerY - 17 }, thickness: 1, color: COLORS.ink });
 }
 
 function drawLabelValue({
@@ -245,20 +418,20 @@ function drawLabelValue({
     y: y - 10,
     size: 10,
     font: boldFont,
-    color: rgb(0.42, 0.45, 0.5),
+    color: COLORS.muted,
   });
 
   return drawWrappedText({
     page,
     text: value,
     x,
-    y: y - 28,
+    y: y - 40,
     width,
     size: valueSize,
     lineHeight: valueSize + 4,
     font: boldFont,
-    color: rgb(0.07, 0.09, 0.13),
-  }) - 6;
+    color: COLORS.ink,
+  }) - 2;
 }
 
 function drawFacts({
@@ -290,13 +463,14 @@ function drawFacts({
     const cardY = y - row * (rowHeight + gap) - rowHeight;
     lowestY = Math.min(lowestY, cardY);
 
-    page.drawRectangle({
+    drawRoundedRect(page, {
       x: cardX,
       y: cardY,
       width: columnWidth,
       height: rowHeight,
-      color: rgb(1, 1, 1),
-      borderColor: rgb(0.9, 0.91, 0.92),
+      radius: 12,
+      color: rgb(1, 0.99, 0.97),
+      borderColor: COLORS.border,
       borderWidth: 1,
     });
 
@@ -305,8 +479,10 @@ function drawFacts({
       y: cardY + rowHeight - 16,
       size: 9,
       font: boldFont,
-      color: rgb(0.42, 0.45, 0.5),
+      color: COLORS.muted,
     });
+
+    const isLastSeen = label === "LAST SEEN";
 
     drawWrappedText({
       page,
@@ -314,11 +490,11 @@ function drawFacts({
       x: cardX + 10,
       y: cardY + rowHeight - 32,
       width: columnWidth - 20,
-      size: 11,
-      lineHeight: 13,
+      size: isLastSeen ? 10 : 11,
+      lineHeight: isLastSeen ? 11 : 13,
       font,
-      color: rgb(0.07, 0.09, 0.13),
-      maxLines: 2,
+      color: COLORS.ink,
+      maxLines: isLastSeen ? undefined : 2,
     });
   }
 
@@ -345,12 +521,13 @@ function drawNotes({
   boldFont: FontLike;
 }) {
   const height = 96;
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x,
     y: y - height,
     width,
     height,
-    color: rgb(0.97, 0.98, 0.99),
+    radius: 14,
+    color: COLORS.cream,
   });
 
   page.drawText(title, {
@@ -358,7 +535,7 @@ function drawNotes({
     y: y - 18,
     size: 9,
     font: boldFont,
-    color: rgb(0.42, 0.45, 0.5),
+    color: COLORS.muted,
   });
 
   drawWrappedText({
@@ -370,7 +547,7 @@ function drawNotes({
     size: 11,
     lineHeight: 14,
     font,
-    color: rgb(0.07, 0.09, 0.13),
+    color: COLORS.ink,
     maxLines: 4,
   });
 }
@@ -400,14 +577,15 @@ function drawSidebar({
 }) {
   const panelHeight = PAGE_HEIGHT - PAGE_MARGIN * 2;
 
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x,
     y: y - panelHeight,
     width,
     height: panelHeight,
-    color: rgb(0.98, 0.98, 0.99),
-    borderColor: rgb(0.9, 0.91, 0.92),
-    borderWidth: 1,
+    radius: 16,
+    color: rgb(1, 0.98, 0.95),
+    borderColor: COLORS.border,
+    borderWidth: 2,
   });
 
   page.drawText("SCAN TO OPEN CASE", {
@@ -415,31 +593,61 @@ function drawSidebar({
     y: y - 22,
     size: 11,
     font: boldFont,
-    color: rgb(0.22, 0.25, 0.32),
+    color: COLORS.green,
   });
 
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x: x + 14,
     y: y - 206,
     width: width - 28,
     height: 160,
+    radius: 14,
     color: rgb(1, 1, 1),
+    borderColor: COLORS.border,
+    borderWidth: 1,
   });
 
+  drawRoundedRect(page, {
+    x: x + 22,
+    y: y - 198,
+    width: width - 44,
+    height: width - 44,
+    radius: 12,
+    color: COLORS.greenPale,
+    borderColor: COLORS.greenSoft,
+    borderWidth: 1,
+  });
+
+  const qrX = x + 26;
+  const qrY = y - 194;
+  const qrSize = width - 52;
   page.drawImage(qrCode.image, {
-    x: x + 26,
-    y: y - 194,
-    width: width - 52,
-    height: width - 52,
+    x: qrX,
+    y: qrY,
+    width: qrSize,
+    height: qrSize,
   });
 
   const contactY = y - 232;
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x: x + 14,
     y: contactY - 140,
     width: width - 28,
     height: 140,
-    color: rgb(0.07, 0.09, 0.13),
+    radius: 14,
+    color: COLORS.greenSoft,
+    borderColor: COLORS.green,
+    borderWidth: 1,
+  });
+
+  drawRoundedRect(page, {
+    x: x + 20,
+    y: contactY - 134,
+    width: width - 40,
+    height: 128,
+    radius: 10,
+    borderColor: rgb(1, 1, 1),
+    borderWidth: 1.5,
   });
 
   page.drawText("CONTACT", {
@@ -447,10 +655,10 @@ function drawSidebar({
     y: contactY - 16,
     size: 10,
     font: boldFont,
-    color: rgb(0.8, 0.84, 0.9),
+    color: COLORS.green,
   });
 
-  drawWrappedText({
+  const ownerBottom = drawWrappedText({
     page,
     text: ownerName,
     x: x + 26,
@@ -459,20 +667,20 @@ function drawSidebar({
     size: 18,
     lineHeight: 20,
     font: boldFont,
-    color: rgb(1, 1, 1),
+    color: COLORS.ink,
     maxLines: 2,
   });
 
-  drawWrappedText({
+  const emailBottom = drawWrappedText({
     page,
     text: ownerEmail,
     x: x + 26,
-    y: contactY - 82,
+    y: ownerBottom - 8,
     width: width - 52,
     size: 11,
     lineHeight: 14,
     font,
-    color: rgb(0.9, 0.92, 0.95),
+    color: COLORS.green,
     maxLines: 3,
   });
 
@@ -481,22 +689,23 @@ function drawSidebar({
       page,
       text: ownerPhone,
       x: x + 26,
-      y: contactY - 122,
+      y: emailBottom - 8,
       width: width - 52,
       size: 11,
       lineHeight: 14,
       font,
-      color: rgb(0.9, 0.92, 0.95),
+      color: COLORS.green,
       maxLines: 2,
     });
   }
 
-  page.drawRectangle({
+  drawRoundedRect(page, {
     x: x + 14,
     y: PAGE_MARGIN + 14,
     width: width - 28,
     height: 64,
-    borderColor: rgb(0.82, 0.85, 0.88),
+    radius: 12,
+    borderColor: COLORS.orangeSoft,
     borderWidth: 1,
   });
 
@@ -509,13 +718,14 @@ function drawSidebar({
     size: 10,
     lineHeight: 13,
     font,
-    color: rgb(0.3, 0.33, 0.38),
+    color: COLORS.muted,
     maxLines: 3,
   });
 }
 
 async function buildQrCode(pdfDoc: PDFDocument, publicCaseUrl: string) {
   const dataUrl = await QRCode.toDataURL(publicCaseUrl, {
+    errorCorrectionLevel: "H",
     margin: 1,
     width: 256,
     color: {
@@ -555,8 +765,17 @@ async function loadPhoto(pdfDoc: PDFDocument, photoUrl: string | undefined, orig
       bytes = new Uint8Array(await response.arrayBuffer());
     }
 
-    const pngBytes = await sharp(Buffer.from(bytes))
-      .rotate()
+    const normalizedPhoto = sharp(Buffer.from(bytes)).rotate();
+    const metadata = await normalizedPhoto.metadata();
+    const imageWidth = metadata.width ?? 1;
+    const imageHeight = metadata.height ?? 1;
+    const radius = Math.max(16, Math.round(Math.min(imageWidth, imageHeight) * 0.045));
+    const roundedMask = Buffer.from(
+      `<svg width="${imageWidth}" height="${imageHeight}" xmlns="http://www.w3.org/2000/svg"><rect width="${imageWidth}" height="${imageHeight}" rx="${radius}" ry="${radius}" fill="white"/></svg>`,
+    );
+    const pngBytes = await normalizedPhoto
+      .ensureAlpha()
+      .composite([{ input: roundedMask, blend: "dest-in" }])
       .png()
       .toBuffer();
     const image = await pdfDoc.embedPng(pngBytes);
@@ -631,6 +850,75 @@ function drawWrappedText({
   }
 
   return y - lines.length * lineHeight;
+}
+
+function drawCenteredText({
+  page,
+  text,
+  centerX,
+  y,
+  size,
+  font,
+  color,
+}: {
+  page: PDFPageLike;
+  text: string;
+  centerX: number;
+  y: number;
+  size: number;
+  font: FontLike;
+  color: ReturnType<typeof rgb>;
+}) {
+  page.drawText(text, {
+    x: centerX - font.widthOfTextAtSize(text, size) / 2,
+    y,
+    size,
+    font,
+    color,
+  });
+}
+
+function drawRoundedRect(
+  page: PDFPageLike,
+  {
+    x,
+    y,
+    width,
+    height,
+    radius,
+    color,
+    borderColor,
+    borderWidth,
+  }: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    radius: number;
+    color?: ReturnType<typeof rgb>;
+    borderColor?: ReturnType<typeof rgb>;
+    borderWidth?: number;
+  },
+) {
+  const r = Math.min(radius, width / 2, height / 2);
+  const path = [
+    `M ${x + r} ${y}`,
+    `L ${x + width - r} ${y}`,
+    `Q ${x + width} ${y} ${x + width} ${y + r}`,
+    `L ${x + width} ${y + height - r}`,
+    `Q ${x + width} ${y + height} ${x + width - r} ${y + height}`,
+    `L ${x + r} ${y + height}`,
+    `Q ${x} ${y + height} ${x} ${y + height - r}`,
+    `L ${x} ${y + r}`,
+    `Q ${x} ${y} ${x + r} ${y}`,
+    "Z",
+  ].join(" ");
+
+  page.drawSvgPath(path, {
+    color,
+    borderColor,
+    borderWidth,
+  });
 }
 
 function wrapText(

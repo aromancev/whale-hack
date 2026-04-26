@@ -6,7 +6,7 @@ import type { Pet } from "@/domain/pets";
 
 export function ReviewStep({ petCase, pet, lostPlace }: { petCase: Case; pet: Pet; lostPlace: Address }) {
   const lostDate = petCase.lost_time ? petCase.lost_time.slice(0, 10) : "";
-  const lostArea = `${lostPlace.district || "area unknown"}${lostPlace.city ? `, ${lostPlace.city}` : ""}`;
+  const lostArea = lostPlace.city || "city unknown";
   const photoUrl = pet.photo_urls[0];
 
   return (
