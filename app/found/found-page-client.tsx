@@ -1,5 +1,6 @@
 "use client";
 
+import * as exifr from "exifr";
 import { HomeButton } from "@/components/home-button";
 import {
   FoundDetailsForm,
@@ -10,8 +11,10 @@ import {
   type ViewState,
 } from "@/components/found-cat";
 import type { FoundPetFormValues } from "@/components/found-cat";
+import type { Address } from "@/domain/case";
 import { CAT_BREED_TO_GROUP, type CatBreed } from "@/domain/cats";
 import type { Report } from "@/domain/report";
+import { reverseGeocodeNominatim } from "@/service/nominatim";
 import type { CaseMatch } from "@/service/cases";
 import { useState } from "react";
 
@@ -44,7 +47,10 @@ export function FoundPageClient({
     setIsLoading(true);
 
     try {
-      const photoDataUrl = await readFileAsDataUrl(file);
+      const [photoDataUrl, photoCoordinates] = await Promise.all([
+        readFileAsDataUrl(file),
+        readPhotoCoordinates(file),
+      ]);
       const response = await fetch("/api/found/enrich", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +62,21 @@ export function FoundPageClient({
       }
 
       const body = (await response.json()) as { enriched?: EnrichedPetFields };
-      setFormValues(createFormValues(body.enriched, photoDataUrl));
+      const nextValues = createFormValues(body.enriched, photoDataUrl, photoCoordinates);
+
+      if (photoCoordinates) {
+        const locationPrefill = await reverseGeocodePhotoCoordinates(photoCoordinates);
+
+        setFormValues({
+          ...nextValues,
+          city: locationPrefill.city ?? nextValues.city,
+          district: locationPrefill.district ?? nextValues.district,
+          fullAddress: locationPrefill.full_address ?? nextValues.fullAddress,
+        });
+      } else {
+        setFormValues(nextValues);
+      }
+
       setView("details");
     } catch (uploadError) {
       setError(
@@ -188,6 +208,7 @@ type EnrichedPetFields = {
 function createFormValues(
   enriched: EnrichedPetFields | undefined,
   photoDataUrl: string,
+  coordinates: Address["coordinates"] | null = null,
 ): FoundPetFormValues {
   return {
     ...createEmptyFormValues(),
@@ -199,6 +220,7 @@ function createFormValues(
     age_group: enriched?.age_group ?? "",
     collar: booleanToCollarValue(enriched?.collar),
     size: enriched?.size ?? "",
+    coordinates,
   };
 }
 
@@ -219,6 +241,7 @@ function createFormValuesFromReport(
     city: report.sighting.place.city,
     district: report.sighting.place.district ?? "",
     fullAddress: report.sighting.place.full_address ?? "",
+    coordinates: report.sighting.place.coordinates ?? null,
   };
 }
 
@@ -236,6 +259,7 @@ function createEmptyFormValues(): FoundPetFormValues {
     city: "",
     district: "",
     fullAddress: "",
+    coordinates: null,
   };
 }
 
@@ -262,6 +286,7 @@ function toSightingPayload(values: FoundPetFormValues) {
       city: values.city.trim(),
       district: optionalString(values.district),
       full_address: optionalString(values.fullAddress),
+      coordinates: values.coordinates ?? undefined,
     },
     time: new Date(values.foundAt).toISOString(),
   };
@@ -381,6 +406,31 @@ function readFileAsDataUrl(file: File) {
     reader.addEventListener("error", () => reject(reader.error ?? new Error("Unable to read photo.")));
     reader.readAsDataURL(file);
   });
+}
+
+async function readPhotoCoordinates(file: File): Promise<Address["coordinates"] | null> {
+  try {
+    const gps = await exifr.gps(file);
+
+    if (!gps?.latitude || !gps?.longitude) {
+      return null;
+    }
+
+    return {
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function reverseGeocodePhotoCoordinates(coordinates: NonNullable<Address["coordinates"]>) {
+  try {
+    return await reverseGeocodeNominatim(coordinates);
+  } catch {
+    return { coordinates };
+  }
 }
 
 function rewriteToFoundReportUrl(reportId: string) {

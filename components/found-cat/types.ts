@@ -1,3 +1,5 @@
+import type { Address } from "@/domain/case";
+
 export type ResultState = "no-match" | "match";
 export type ViewState = "upload" | "details" | ResultState;
 
@@ -14,6 +16,7 @@ export type FoundPetFormValues = {
   city: string;
   district: string;
   fullAddress: string;
+  coordinates: Address["coordinates"] | null;
 };
 
 export type MatchCandidate = {

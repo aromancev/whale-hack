@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { LocationPickerMap } from "@/components/location-picker-map";
 import { Input } from "@/components/ui/input";
 import {
   Select as UiSelect,
@@ -161,6 +162,46 @@ export function FoundDetailsForm({
                   required
                 />
               </Field>
+              <Field label="District or area">
+                <Input
+                  value={values.district}
+                  onChange={(event) => onChange("district", event.target.value)}
+                  placeholder="Centrum"
+                />
+              </Field>
+              <div className="sm:col-span-2">
+                <Field label="Exact place">
+                  <Input
+                    value={values.fullAddress}
+                    onChange={(event) => onChange("fullAddress", event.target.value)}
+                    placeholder="Near Vondelpark"
+                  />
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <LocationPickerMap
+                  country="nl"
+                  coordinates={values.coordinates}
+                  onLocationChange={(place) => {
+                    onChange("coordinates", place.coordinates);
+
+                    if (place.city !== undefined) {
+                      onChange("city", place.city);
+                    }
+
+                    if (place.district !== undefined) {
+                      onChange("district", place.district);
+                    }
+
+                    if (place.full_address !== undefined) {
+                      onChange("fullAddress", place.full_address);
+                    }
+                  }}
+                  title="Set the sighting pin"
+                  description="Drag the marker, tap the map, or search for the place where you found the pet."
+                  autoFillAddressDetails
+                />
+              </div>
             </div>
           </section>
         </div>
