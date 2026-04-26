@@ -1,7 +1,7 @@
 import { MissingCatForm } from "@/components/missing-cat-form";
 import { HomeButton } from "@/components/home-button";
 import type { Case } from "@/domain/case";
-import { Cat, Heart, PawPrint, Search } from "lucide-react";
+import { BarChart3, Cat, Heart, PawPrint, Search } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -12,9 +12,24 @@ export default function Home() {
       <div className="absolute bottom-0 left-1/3 size-96 -translate-x-1/2 rounded-full bg-[#ffe6a8]/75 blur-3xl" />
 
       <section className="relative z-10 flex w-full max-w-5xl flex-col justify-center py-10 sm:py-16 lg:py-24">
-        <p className="mb-5 w-fit rounded-full bg-white/75 px-4 py-2 text-sm font-bold tracking-wide text-[#7b563e] shadow-sm ring-1 ring-[#efd8bd]">
-          Find Together
-        </p>
+        <div className="mb-5 flex w-fit items-center gap-2">
+          <a
+            href="/report.html"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Learn more about missing cats"
+            title="Learn more about missing cats"
+            className="group relative inline-flex items-center gap-2 rounded-full border-2 border-[#e58d57] bg-[#fff3df] py-2 pl-2 pr-4 text-sm font-black text-[#9b5733] shadow-[0_5px_0_#e7b888] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ffe5c2] hover:shadow-[0_8px_0_#d99863] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e58d57]/30"
+          >
+            <span className="flex size-7 items-center justify-center rounded-full bg-white/70 transition group-hover:scale-105">
+              <BarChart3 className="size-4 transition group-hover:rotate-6 group-hover:scale-105" />
+            </span>
+            Learn about missing cats
+          </a>
+          <p className="rounded-full bg-[#e8fff3]/90 px-4 py-2 text-sm font-bold tracking-wide text-[#476a58] shadow-sm ring-1 ring-[#9bcfb4]">
+            Find Them Together
+          </p>
+        </div>
 
         <h1 className="max-w-3xl text-5xl font-black leading-[0.9] tracking-tight sm:text-7xl lg:text-8xl">
           Every pet deserves a quick way home.
@@ -51,14 +66,6 @@ export default function Home() {
           </Link>
         </div>
 
-        <a
-          href="/report.html"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-flex w-full max-w-3xl items-center justify-center rounded-2xl border-2 border-[#7f6af2] bg-white/80 px-6 py-4 text-lg font-black tracking-tight text-[#4b3db8] shadow-[0_12px_0_#cdc4ff] transition duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_18px_0_#b1a4ff] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#7f6af2]/30"
-        >
-          Missing Pets Report
-        </a>
       </section>
 
       <div className="home-cat pointer-events-none absolute bottom-0 right-0 z-0 h-64 w-64 translate-x-8 translate-y-7 sm:h-80 sm:w-80 sm:translate-x-6 sm:translate-y-10 lg:h-[26rem] lg:w-[26rem]" aria-hidden="true">

@@ -16,7 +16,7 @@ export function UploadView({
           <Heart className="size-7" />
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#d8ffeb] px-3 py-1 text-xs font-bold text-[#245643]">
-          Found cat photo
+          Found a cat
           <PawPrint className="size-3.5" />
         </span>
       </div>

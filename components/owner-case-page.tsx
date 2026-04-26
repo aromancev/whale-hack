@@ -7,6 +7,7 @@ import Link from "next/link";
 import { z } from "zod";
 
 import { LocationPickerMap } from "@/components/location-picker-map";
+import { HomeButton } from "@/components/home-button";
 import { RewardStep } from "@/components/missing-cat-form/reward-step";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -310,7 +311,9 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
       <div className="absolute -right-20 top-52 size-72 rounded-full bg-[#bfe8d5]/70 blur-3xl" />
       <div className="absolute bottom-0 left-1/2 size-80 -translate-x-1/2 rounded-full bg-[#ffe6a8]/70 blur-3xl" />
 
-      <section className="relative mx-auto max-w-4xl">
+      <HomeButton className="text-[#7b563e] ring-[#efd8bd] focus-visible:ring-[#e58d57]/30" />
+
+      <section className="relative mx-auto max-w-4xl pt-16 sm:pt-20">
         <div className="space-y-5">
           <Card className="overflow-hidden rounded-[2rem] border-0 bg-white/90 shadow-2xl shadow-[#d9b28b]/25">
             <CardHeader className="gap-4 p-5 sm:p-7">
@@ -458,14 +461,25 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
             <RewardStep petCase={petCase} updateReward={updateReward} />
           </EditableSection>
 
-          <div className="sticky bottom-4 z-10 flex flex-col gap-2 rounded-[1.5rem] bg-white/95 p-3 shadow-xl shadow-[#d9b28b]/25 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky bottom-4 z-10 mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm font-bold">
               {message ? <span className="text-[#245643]">{message}</span> : null}
               {error ? <span className="text-red-600">{error}</span> : null}
             </div>
-            <Button disabled={isSaving} onClick={() => void saveCase()} className="h-12 rounded-full bg-[#2d251f] px-8 text-white hover:bg-[#46382f]">
-              {isSaving ? "Saving..." : "Save changes"}
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              {petCase.status === "closed" ? (
+                <Button type="button" disabled={isSaving} onClick={reopenCase} className="h-12 rounded-full bg-[#2d251f] px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-[#46382f]">
+                  Reopen case
+                </Button>
+              ) : (
+                <Button type="button" disabled={isSaving} onClick={closeCase} className="h-12 rounded-full bg-red-600 px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-red-700">
+                  Close case
+                </Button>
+              )}
+              <Button disabled={isSaving} onClick={() => void saveCase()} className="h-12 rounded-full bg-[#2d251f] px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-[#46382f]">
+                {isSaving ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
           </div>
         </div>
       </section>
