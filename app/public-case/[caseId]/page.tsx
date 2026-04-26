@@ -85,7 +85,7 @@ export default async function PublicCasePage({
             </dl>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <TextCard title="Appearance" text={pet?.appearance} />
+              <TextCard title="Appearance" text={formatAppearance(pet?.appearance)} />
               <TextCard title="Unique details" text={pet?.unique_details} />
               <TextCard title="Health info" text={pet?.health_info} />
               <TextCard title="Behavior" text={pet?.behavior} />
@@ -183,9 +183,32 @@ function formatValue(value?: string) {
     return "Not listed";
   }
 
+  return humanizeValue(value);
+}
+
+function formatAppearance(value?: string) {
+  if (!value?.trim()) {
+    return undefined;
+  }
+
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => (/^[a-z]+(?:_[a-z]+)*$/.test(part) ? humanizeValue(part) : part))
+    .join(", ");
+}
+
+function humanizeValue(value: string) {
   return value
     .split("_")
     .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word, index) => {
+      if (index > 0 && word === "and") {
+        return word;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
     .join(" ");
 }

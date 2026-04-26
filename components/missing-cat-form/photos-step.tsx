@@ -1,6 +1,6 @@
+import { useEffect, useState } from "react";
 import { Camera } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Pet } from "@/domain/pets";
@@ -8,6 +8,15 @@ import type { Pet } from "@/domain/pets";
 import type { UpdatePet } from "./types";
 
 export function PhotosStep({ pet, updatePet, uploadPhotos }: { pet: Pet; updatePet: UpdatePet; uploadPhotos: (files: File[]) => void }) {
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const visiblePhotos = previewUrls.length ? previewUrls : pet.photo_urls;
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
   return (
     <div className="space-y-5">
       <Label htmlFor="photos">Choose cat photos</Label>
@@ -24,16 +33,22 @@ export function PhotosStep({ pet, updatePet, uploadPhotos }: { pet: Pet; updateP
         className="sr-only"
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
-          updatePet("photo_urls", files.map((file) => file.name));
+          setPreviewUrls(files.map((file) => URL.createObjectURL(file)));
+          updatePet("photo_urls", []);
           uploadPhotos(files);
+          event.target.value = "";
         }}
       />
-      {pet.photo_urls.length ? (
-        <div className="flex flex-wrap gap-2">
-          {pet.photo_urls.map((photo) => (
-            <Badge key={photo} variant="outline" className="h-7 rounded-full bg-white px-3 text-stone-700">
-              {photo}
-            </Badge>
+      {visiblePhotos.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {visiblePhotos.map((photo, index) => (
+            <div
+              key={photo}
+              aria-label={`Selected cat photo ${index + 1}`}
+              className="aspect-square rounded-2xl border border-amber-100 bg-cover bg-center bg-no-repeat shadow-sm"
+              role="img"
+              style={{ backgroundImage: `url(${photo})` }}
+            />
           ))}
         </div>
       ) : (

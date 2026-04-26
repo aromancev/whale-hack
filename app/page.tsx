@@ -83,7 +83,7 @@ export default function Home() {
   );
 }
 
-export function IntakePage({ initialCase }: { initialCase?: Case }) {
+export function IntakePage({ initialCase, initialStep }: { initialCase?: Case; initialStep?: number }) {
   return (
     <main className="relative min-h-svh overflow-hidden bg-[#fff8ec] px-4 py-5 text-[#2d251f] sm:px-6 sm:py-8">
       <div className="absolute -left-24 top-10 size-64 rounded-full bg-[#f8c8a7]/60 blur-3xl" />
@@ -109,7 +109,7 @@ export function IntakePage({ initialCase }: { initialCase?: Case }) {
         </div>
       </div>
       <div className="relative">
-        <MissingCatForm initialCase={initialCase} />
+        <MissingCatForm initialCase={initialCase} initialStep={initialStep} />
       </div>
     </main>
   );

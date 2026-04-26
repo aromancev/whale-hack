@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Calendar,
@@ -128,11 +128,11 @@ const progressLabels = [
   "Almost found your cat",
 ];
 
-export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
+export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Case; initialStep?: number }) {
   const [petCase, setPetCase] = useState<Case>(() => initialCase ?? createEmptyCase());
   const [breedSearch, setBreedSearch] = useState(() => formatCatOption(initialCase?.pet?.breed ?? ""));
   const [lostTime, setLostTime] = useState(() => getLostTimeInput(initialCase?.lost_time));
-  const [currentStep, setCurrentStep] = useState(() => initialCase ? 2 : 0);
+  const [currentStep, setCurrentStep] = useState(() => getInitialStepIndex(initialStep, initialCase));
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -154,6 +154,12 @@ export function MissingCatForm({ initialCase }: { initialCase?: Case }) {
   const selectedBreed = findCatBreed(pet.breed);
   const selectedBreedLabel = selectedBreed ? formatCatOption(selectedBreed) : null;
   const visibleBreedOptions = catBreedOptions.filter((breed) => breedMatchesSearch(breed.label, breedSearch));
+
+  useEffect(() => {
+    if (!submitted) {
+      rewriteToStepUrl(currentStep);
+    }
+  }, [currentStep, submitted]);
 
   function updateReward(value: string) {
     setPetCase((current) => ({
@@ -640,6 +646,14 @@ function createTimestamp() {
   return nowAsISODateTimeString();
 }
 
+function getInitialStepIndex(initialStep: number | undefined, initialCase: Case | undefined) {
+  if (initialStep !== undefined && initialStep >= 1 && initialStep <= steps.length) {
+    return initialStep - 1;
+  }
+
+  return initialCase ? 2 : 0;
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -711,6 +725,18 @@ function rewriteToPublicCaseUrl(caseId: string) {
   if (window.location.pathname !== casePath) {
     window.history.replaceState(null, "", casePath);
   }
+}
+
+function rewriteToStepUrl(stepIndex: number) {
+  const url = new URL(window.location.href);
+
+  if (url.pathname !== "/intake" && !url.pathname.startsWith("/cases/")) {
+    return;
+  }
+
+  url.searchParams.set("step", String(stepIndex + 1));
+
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function createLostTime(date: string, time: string) {
