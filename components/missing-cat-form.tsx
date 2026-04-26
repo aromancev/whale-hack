@@ -315,10 +315,10 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
     setError("");
   }
 
-  function validateStep() {
+  function getStepErrors(stepIndex: number) {
     const nextFieldErrors: Partial<Record<FieldErrorKey, string>> = {};
 
-    if (currentStep === 1) {
+    if (stepIndex === 1) {
       if (!petCase.owner.name.trim()) {
         nextFieldErrors["owner.name"] = "Please add your name.";
       }
@@ -330,7 +330,7 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
       }
     }
 
-    if (currentStep === 3) {
+    if (stepIndex === 3) {
       if (!pet.name?.trim()) {
         nextFieldErrors["pet.name"] = "Please add your cat's name.";
       }
@@ -340,7 +340,7 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
       }
     }
 
-    if (currentStep === 4) {
+    if (stepIndex === 4) {
       if (!lostDate) {
         nextFieldErrors.lostDate = "Please add the date your cat was last seen.";
       }
@@ -349,6 +349,12 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
         nextFieldErrors["lost_place.city"] = "Please add the city.";
       }
     }
+
+    return nextFieldErrors;
+  }
+
+  function validateStep(stepIndex = currentStep) {
+    const nextFieldErrors = getStepErrors(stepIndex);
 
     setFieldErrors(nextFieldErrors);
     return Object.keys(nextFieldErrors).length === 0;
@@ -380,6 +386,17 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
   }
 
   async function createCasePreview() {
+    for (const stepIndex of [1, 3, 4]) {
+      const nextFieldErrors = getStepErrors(stepIndex);
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setCurrentStep(stepIndex);
+        setFieldErrors(nextFieldErrors);
+        setError("");
+        return;
+      }
+    }
+
     const saveError = await persistCase({
       ...petCase,
       status: "open",
