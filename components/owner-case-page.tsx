@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
-import { CheckCircle2, ImagePlus, ShieldCheck, XCircle, XIcon } from "lucide-react";
+import { CheckCircle2, ImagePlus, Printer, ShieldCheck, XCircle, XIcon } from "lucide-react";
 import Link from "next/link";
 import { z } from "zod";
 
@@ -331,9 +331,6 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
                   <Link href={`/public-case/${encodeURIComponent(petCase.id)}`} className="inline-flex h-11 items-center rounded-full bg-[#245643] px-5 text-sm font-bold text-white hover:bg-[#1d4737]">
                     Public page
                   </Link>
-                  <Link href={`/cases/${encodeURIComponent(petCase.id)}/poster`} className="inline-flex h-11 items-center rounded-full bg-[#fff2d0] px-5 text-sm font-bold text-[#7a4b21] hover:bg-[#ffe6a8]">
-                    Poster page
-                  </Link>
                   {petCase.status === "closed" ? (
                     <Button type="button" disabled={isSaving} onClick={reopenCase} className="h-11 rounded-full bg-[#2d251f] px-5 text-white hover:bg-[#46382f]">
                       Reopen case
@@ -348,6 +345,17 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
               <div className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-black ${petCase.status === "closed" ? "bg-red-50 text-red-700" : "bg-[#fff2d0] text-[#7a4b21]"}`}>
                 {petCase.status === "closed" ? <XCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
                 Status: {petCase.status}
+              </div>
+              <div className="flex justify-end">
+                <a
+                  href={`/case/${encodeURIComponent(petCase.id)}/flyer/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#fff2d0] px-5 text-sm font-bold text-[#7a4b21] hover:bg-[#ffe6a8]"
+                >
+                  <Printer className="size-4" />
+                  Open printable poster
+                </a>
               </div>
             </CardHeader>
           </Card>

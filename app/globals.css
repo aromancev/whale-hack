@@ -151,6 +151,112 @@
   }
 }
 
+@media print {
+  @page {
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .flyer-page {
+    min-height: auto !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .flyer-layout {
+    grid-template-columns: minmax(0, 1.25fr) 13rem !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+    break-inside: avoid;
+  }
+
+  .flyer-main,
+  .flyer-side,
+  .flyer-photo,
+  .flyer-fact,
+  .flyer-notes,
+  .flyer-contact,
+  .flyer-help {
+    break-inside: avoid;
+  }
+
+  .flyer-main {
+    gap: 0.9rem !important;
+  }
+
+  .flyer-side {
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+  }
+
+  .flyer-heading {
+    font-size: 2.8rem !important;
+    line-height: 0.95 !important;
+  }
+
+  .flyer-photo-frame {
+    height: 14rem !important;
+    padding: 0.75rem !important;
+  }
+
+  .flyer-pet-name {
+    font-size: 1.75rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .flyer-facts {
+    gap: 0.5rem !important;
+  }
+
+  .flyer-fact {
+    padding: 0.65rem !important;
+  }
+
+  .flyer-fact dt,
+  .flyer-notes p:first-child,
+  .flyer-contact p:first-child {
+    font-size: 0.6rem !important;
+  }
+
+  .flyer-fact dd,
+  .flyer-notes p:last-child,
+  .flyer-help,
+  .flyer-contact {
+    font-size: 0.82rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .flyer-notes,
+  .flyer-contact,
+  .flyer-help {
+    padding: 0.8rem !important;
+  }
+
+  .flyer-qr {
+    margin-top: 0.5rem !important;
+    padding: 0.6rem !important;
+  }
+
+  .flyer-qr svg {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
 @layer components {
   .home-cat {
     --cat-fur: #d88955;

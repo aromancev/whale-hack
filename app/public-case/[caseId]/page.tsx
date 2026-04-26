@@ -1,9 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import { HomeButton } from "@/components/home-button";
 import { PublicCaseEmailButton } from "@/components/public-case-email-button";
-import { CaseSchema, type Address, type Case } from "@/domain/case";
+import {
+  formatAddress,
+  formatLostTime,
+  formatValue,
+  getPublicCase,
+} from "@/app/public-case/public-case-utils";
 import { CalendarDays, Cat, MapPin, Phone, ShieldCheck } from "lucide-react";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 export default async function PublicCasePage({
@@ -97,33 +101,6 @@ export default async function PublicCasePage({
   );
 }
 
-async function getPublicCase(caseId: string) {
-  const requestHeaders = await headers();
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const host = requestHeaders.get("host");
-
-  if (!host) {
-    return null;
-  }
-
-  const response = await fetch(
-    `${protocol}://${host}/api/cases/${encodeURIComponent(caseId)}`,
-    { cache: "no-store" },
-  );
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error("Unable to load public case.");
-  }
-
-  const body = (await response.json()) as { case?: unknown };
-
-  return CaseSchema.parse(body.case) satisfies Case;
-}
-
 function InfoCard({
   icon,
   label,
@@ -155,35 +132,6 @@ function TextCard({ title, text }: { title: string; text?: string }) {
       </p>
     </section>
   );
-}
-
-function formatLostTime(value?: string) {
-  if (!value) {
-    return "Not listed";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatAddress(address?: Address) {
-  if (!address) {
-    return "Not listed";
-  }
-
-  return [address.full_address, address.district, address.city, address.country]
-    .filter(Boolean)
-    .join(", ") || "Not listed";
-}
-
-function formatValue(value?: string) {
-  if (!value) {
-    return "Not listed";
-  }
-
-  return humanizeValue(value);
 }
 
 function formatAppearance(value?: string) {
