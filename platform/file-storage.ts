@@ -80,7 +80,7 @@ function getConfiguredDriver(): FileStorageDriver {
 const vercelBlobStorage: FileStorage = {
   async put(pathname, body, options = {}) {
     const blob = await put(pathname, bodyToVercelBody(body), {
-      access: options.access ?? "public",
+      access: "private",
       allowOverwrite: options.allowOverwrite ?? true,
       cacheControlMaxAge: options.cacheControlMaxAge,
       contentType: options.contentType,
