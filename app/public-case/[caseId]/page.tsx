@@ -7,15 +7,19 @@ import {
   formatValue,
   getPublicCase,
 } from "@/app/public-case/public-case-utils";
-import { CalendarDays, Cat, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { CalendarDays, Cat, ChevronLeft, MapPin, Phone, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export default async function PublicCasePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ caseId: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 }) {
   const { caseId } = await params;
+  const { from } = await searchParams;
   const petCase = await getPublicCase(caseId);
 
   if (!petCase) {
@@ -25,6 +29,7 @@ export default async function PublicCasePage({
   const pet = petCase.pet;
   const petName = pet?.name?.trim() || "Missing cat";
   const photoUrl = pet?.photo_urls[0];
+  const showEditBackButton = getFirstParam(from) === "edit";
 
   return (
     <main className="relative min-h-svh overflow-hidden bg-[#fff8ec] px-4 py-5 text-[#2d251f] sm:px-6 sm:py-8">
@@ -35,6 +40,15 @@ export default async function PublicCasePage({
       <HomeButton className="text-[#7b563e] ring-[#efd8bd] focus-visible:ring-[#e58d57]/30" />
 
       <section className="relative mx-auto max-w-4xl pt-16 sm:pt-20">
+        {showEditBackButton ? (
+          <Link
+            href={`/cases/${encodeURIComponent(caseId)}`}
+            className="mb-4 inline-flex items-center gap-1 rounded-full bg-white/80 px-4 py-2 text-sm font-black text-[#7b563e] shadow-sm ring-1 ring-[#efd8bd] transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e58d57]/30"
+          >
+            <ChevronLeft className="size-4" />
+            Back to edit
+          </Link>
+        ) : null}
         <div className="overflow-hidden rounded-[2rem] border-2 border-[#e8d7be] bg-white/85 shadow-[0_18px_0_#e7b888]">
           {photoUrl ? (
             <div className="p-4 sm:p-5">
@@ -98,6 +112,10 @@ export default async function PublicCasePage({
       </section>
     </main>
   );
+}
+
+function getFirstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function InfoCard({

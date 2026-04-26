@@ -31,6 +31,11 @@ const catBreedOptions = Object.values(CAT_BREEDS_BY_GROUP)
   .flat()
   .map((breed) => ({ value: breed, label: formatCatOption(breed) }));
 const catColorOptions = CAT_COLORS.map((color) => ({ value: color, label: formatCatOption(color) }));
+const ownerActionBaseClass = "inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 px-6 text-sm font-black shadow-[0_8px_0_var(--owner-action-shadow)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_0_var(--owner-action-hover-shadow)] focus-visible:outline-none focus-visible:ring-4 sm:w-auto";
+const ownerPrimaryActionClass = `${ownerActionBaseClass} border-[#2d251f] bg-[#2d251f] text-white [--owner-action-hover-shadow:#241d19] [--owner-action-shadow:#46382f] hover:bg-[#46382f] focus-visible:ring-[#2d251f]/25`;
+const ownerSaveActionClass = `${ownerActionBaseClass} border-[#4f9a78] bg-[#e8fff3] text-[#245643] [--owner-action-hover-shadow:#76b994] [--owner-action-shadow:#9bcfb4] hover:bg-[#d8ffeb] focus-visible:ring-[#4f9a78]/30`;
+const ownerPublicExperimentActionClass = `${ownerActionBaseClass} border-[#5d8fd6] bg-[#eef5ff] text-[#275283] [--owner-action-hover-shadow:#8fb8eb] [--owner-action-shadow:#b8d4f3] hover:bg-[#deedff] focus-visible:ring-[#5d8fd6]/30`;
+const ownerWarningActionClass = `${ownerActionBaseClass} border-[#e58d57] bg-[#fff3df] text-[#9b5733] [--owner-action-hover-shadow:#d99863] [--owner-action-shadow:#e7b888] hover:bg-[#ffe5c2] focus-visible:ring-[#e58d57]/30`;
 
 type FieldErrorKey =
   | "owner.name"
@@ -202,8 +207,10 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
 
       setPetCase(parsed.data.case);
       setMessage("Photos uploaded.");
-    } catch {
-      setError("We couldn't upload these photos. Please try again.");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error
+        ? uploadError.message
+        : "We couldn't upload these photos. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -239,8 +246,10 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
 
       setPetCase(parsed.data.case);
       setMessage(successMessage);
-    } catch {
-      setError("We couldn't save this case. Please try again.");
+    } catch (saveError) {
+      setError(saveError instanceof Error
+        ? saveError.message
+        : "We couldn't save this case. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -330,35 +339,21 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
                     Manage every detail in one place. Changes update the public case.
                   </CardDescription>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/public-case/${encodeURIComponent(petCase.id)}`} className="inline-flex h-11 items-center rounded-full bg-[#245643] px-5 text-sm font-bold text-white hover:bg-[#1d4737]">
-                    Public page
-                  </Link>
-                  {petCase.status === "closed" ? (
-                    <Button type="button" disabled={isSaving} onClick={reopenCase} className="h-11 rounded-full bg-[#2d251f] px-5 text-white hover:bg-[#46382f]">
-                      Reopen case
-                    </Button>
-                  ) : (
-                    <Button type="button" disabled={isSaving} onClick={closeCase} className="h-11 rounded-full bg-red-600 px-5 text-white hover:bg-red-700">
-                      Close case
-                    </Button>
-                  )}
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                  <a
+                    href={`/case/${encodeURIComponent(petCase.id)}/flyer/pdf`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={ownerWarningActionClass}
+                  >
+                    <Printer className="size-4" />
+                    Open printable poster
+                  </a>
                 </div>
               </div>
               <div className={`flex w-fit items-center gap-2 rounded-full px-3 py-1 text-sm font-black ${petCase.status === "closed" ? "bg-red-50 text-red-700" : "bg-[#fff2d0] text-[#7a4b21]"}`}>
                 {petCase.status === "closed" ? <XCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
                 Status: {petCase.status}
-              </div>
-              <div className="flex justify-end">
-                <a
-                  href={`/case/${encodeURIComponent(petCase.id)}/flyer/pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#fff2d0] px-5 text-sm font-bold text-[#7a4b21] hover:bg-[#ffe6a8]"
-                >
-                  <Printer className="size-4" />
-                  Open printable poster
-                </a>
               </div>
             </CardHeader>
           </Card>
@@ -461,24 +456,29 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
             <RewardStep petCase={petCase} updateReward={updateReward} />
           </EditableSection>
 
-          <div className="sticky bottom-4 z-10 mt-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky bottom-4 z-10 mt-8 space-y-2">
             <div className="text-sm font-bold">
               {message ? <span className="text-[#245643]">{message}</span> : null}
               {error ? <span className="text-red-600">{error}</span> : null}
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               {petCase.status === "closed" ? (
-                <Button type="button" disabled={isSaving} onClick={reopenCase} className="h-12 rounded-full bg-[#2d251f] px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-[#46382f]">
+                <Button type="button" disabled={isSaving} onClick={reopenCase} className={ownerPrimaryActionClass}>
                   Reopen case
                 </Button>
               ) : (
-                <Button type="button" disabled={isSaving} onClick={closeCase} className="h-12 rounded-full bg-red-600 px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-red-700">
+                <Button type="button" disabled={isSaving} onClick={closeCase} className={ownerWarningActionClass}>
                   Close case
                 </Button>
               )}
-              <Button disabled={isSaving} onClick={() => void saveCase()} className="h-12 rounded-full bg-[#2d251f] px-8 text-white shadow-xl shadow-[#d9b28b]/25 hover:bg-[#46382f]">
-                {isSaving ? "Saving..." : "Save changes"}
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Link href={`/public-case/${encodeURIComponent(petCase.id)}?from=edit`} className={ownerPublicExperimentActionClass}>
+                  Public page
+                </Link>
+                <Button disabled={isSaving} onClick={() => void saveCase()} className={ownerSaveActionClass}>
+                  {isSaving ? "Saving..." : "Save changes"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

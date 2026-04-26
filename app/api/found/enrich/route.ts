@@ -1,5 +1,5 @@
 import { createAnthropicAiCapabilities } from "@/platform/ai";
-import { CatEnricher } from "@/service/cat-enrich";
+import { CatEnricher, NonCatImageError } from "@/service/cat-enrich";
 import { z } from "zod";
 
 const EnrichRequestSchema = z.object({
@@ -26,7 +26,14 @@ export async function POST(request: Request) {
     const enriched = await enricher.enrichFromImage(parsedBody.data.base64Image);
 
     return Response.json({ enriched });
-  } catch {
+  } catch (error) {
+    if (error instanceof NonCatImageError) {
+      return Response.json(
+        { error: "Please upload a clear photo of a cat." },
+        { status: 400 },
+      );
+    }
+
     return Response.json(
       { error: "We couldn't analyze that photo right now. Please try again." },
       { status: 500 },

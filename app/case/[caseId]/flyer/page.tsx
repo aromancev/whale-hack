@@ -7,7 +7,7 @@ import {
   getPublicCase,
   getPublicCaseUrl,
 } from "@/app/public-case/public-case-utils";
-import { Cat, QrCode } from "lucide-react";
+import { QrCode } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
@@ -70,21 +70,29 @@ export default async function PublicCaseFlyerPage({
               </p>
             </div>
 
-            <div className="flyer-photo overflow-hidden rounded-[1.75rem] border border-[#e5dccf] bg-[#faf7f1]">
+            <div className="flyer-photo overflow-hidden rounded-[1.75rem] border-2 border-[#e8d7be] bg-[#f3fbf5]">
               {photoUrl ? (
                 <div className="flyer-photo-frame flex h-[26rem] items-center justify-center p-4 sm:p-6">
                   <img
                     alt={`${petName} photo`}
-                    className="max-h-full w-full rounded-[1.25rem] object-contain"
+                    className="max-h-full w-full rounded-[1.75rem] object-contain"
                     src={photoUrl}
                   />
                 </div>
               ) : (
-                <div className="flyer-photo-frame flex h-[26rem] flex-col items-center justify-center gap-3 text-[#9ca3af]">
-                  <Cat className="size-24" />
-                  <span className="text-sm font-black uppercase tracking-[0.3em]">
-                    Photo unavailable
-                  </span>
+                <div className="flyer-photo-frame flex h-[26rem] flex-col items-center justify-center p-8 text-center">
+                  <div className="flex min-h-44 w-full max-w-sm flex-col items-center justify-center rounded-3xl border border-dashed border-amber-300 bg-white/80 p-6">
+                    <span className="relative mb-4 h-24 w-28 text-[#d07b47]" aria-hidden="true">
+                      <span className="absolute left-4 top-2 h-10 w-10 -rotate-12 rounded-[0.8rem_100%_0.8rem_0.8rem] bg-current" />
+                      <span className="absolute right-4 top-2 h-10 w-10 rotate-12 rounded-[100%_0.8rem_0.8rem_0.8rem] bg-current" />
+                      <span className="absolute inset-x-4 bottom-1 h-20 rounded-[46%_46%_40%_40%] bg-current shadow-[inset_-0.55rem_-0.45rem_0_#b9653b]" />
+                      <span className="absolute left-10 top-12 h-3 w-2 rounded-full bg-[#2d251f]" />
+                      <span className="absolute right-10 top-12 h-3 w-2 rounded-full bg-[#2d251f]" />
+                      <span className="absolute left-1/2 top-[3.85rem] h-2 w-2 -translate-x-1/2 rounded-full bg-[#2d251f]" />
+                    </span>
+                    <span className="font-semibold text-stone-900">Photo coming soon</span>
+                    <span className="mt-1 text-sm text-stone-500">{petName}</span>
+                  </div>
                 </div>
               )}
             </div>
