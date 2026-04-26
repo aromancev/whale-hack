@@ -207,8 +207,10 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
 
       setPetCase(parsed.data.case);
       setMessage("Photos uploaded.");
-    } catch {
-      setError("We couldn't upload these photos. Please try again.");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error
+        ? uploadError.message
+        : "We couldn't upload these photos. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -244,8 +246,10 @@ export function OwnerCasePage({ initialCase }: { initialCase: Case }) {
 
       setPetCase(parsed.data.case);
       setMessage(successMessage);
-    } catch {
-      setError("We couldn't save this case. Please try again.");
+    } catch (saveError) {
+      setError(saveError instanceof Error
+        ? saveError.message
+        : "We couldn't save this case. Please try again.");
     } finally {
       setIsSaving(false);
     }

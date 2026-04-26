@@ -446,8 +446,10 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
       } else {
         setError("We received an unexpected response from the server.");
       }
-    } catch {
-      setError("We couldn't upload this photo. Please check your connection and try again.");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error
+        ? uploadError.message
+        : "We couldn't upload this photo. Please check your connection and try again.");
     } finally {
       setIsSaving(false);
     }
@@ -481,8 +483,10 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
       }
 
       return "We received an unexpected response from the server.";
-    } catch {
-      return "We couldn't save this step. Please check your connection and try again.";
+    } catch (saveError) {
+      return saveError instanceof Error
+        ? saveError.message
+        : "We couldn't save this step. Please check your connection and try again.";
     } finally {
       setIsSaving(false);
     }
