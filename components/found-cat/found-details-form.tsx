@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CAT_BREEDS_BY_GROUP, CAT_COLORS } from "@/domain/cats";
 import { RotateCcw, Search, Sparkles, XIcon } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FoundPetFormValues } from "./types";
 
 const breedOptions = Object.values(CAT_BREEDS_BY_GROUP)
@@ -266,8 +266,23 @@ function SearchableSelect({
   searchPlaceholder: string;
   value: string | null;
 }) {
+  const [open, setOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+
   return (
-    <UiSelect value={value} onValueChange={onValueChange}>
+    <UiSelect value={value} onValueChange={onValueChange} open={open} onOpenChange={setOpen}>
       <SelectTrigger className="h-12 w-full rounded-full border-0 bg-white px-4 py-2 text-base font-medium text-[#2d251f] shadow-sm">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -275,6 +290,7 @@ function SearchableSelect({
         <div className="sticky top-0 z-10 bg-white p-1">
           <div className="relative">
             <Input
+              ref={searchInputRef}
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               onKeyDown={(event) => event.stopPropagation()}

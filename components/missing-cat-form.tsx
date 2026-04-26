@@ -14,12 +14,10 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -136,7 +134,6 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldErrorKey, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const progress = useMemo(
     () => Math.round((currentStep / (steps.length - 1)) * 100),
@@ -156,10 +153,8 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
   const visibleBreedOptions = catBreedOptions.filter((breed) => breedMatchesSearch(breed.label, breedSearch));
 
   useEffect(() => {
-    if (!submitted) {
-      rewriteToStepUrl(currentStep);
-    }
-  }, [currentStep, submitted]);
+    rewriteToStepUrl(currentStep);
+  }, [currentStep]);
 
   function updateReward(value: string) {
     setPetCase((current) => ({
@@ -389,14 +384,11 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
       ...petCase,
       status: "open",
       updated_at: createTimestamp(),
-    }, { rewriteUrl: false });
+    });
 
     if (saveError) {
       setError(saveError);
-      return;
     }
-
-    setSubmitted(true);
   }
 
   async function uploadPhotos(files: File[]) {
@@ -444,16 +436,6 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
     }
   }
 
-  function startOver() {
-    setPetCase(createEmptyCase());
-    setLostTime("");
-    setCurrentStep(0);
-    setFieldErrors({});
-    setError("");
-    setSubmitted(false);
-    rewriteToHomeUrl();
-  }
-
   async function persistCase(nextCase: Case = petCase, options: { rewriteUrl?: boolean } = {}) {
     setIsSaving(true);
 
@@ -473,7 +455,7 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
         setPetCase(savedCase.data.case);
 
         if (savedCase.data.case.status === "open") {
-          rewriteToPublicCaseUrl(savedCase.data.case.id);
+          window.location.assign(`/cases/${encodeURIComponent(savedCase.data.case.id)}`);
         } else if (options.rewriteUrl !== false) {
           rewriteToCaseUrl(savedCase.data.case.id);
         }
@@ -487,32 +469,6 @@ export function MissingCatForm({ initialCase, initialStep }: { initialCase?: Cas
     } finally {
       setIsSaving(false);
     }
-  }
-
-  if (submitted) {
-    return (
-      <Card className="mx-auto w-full max-w-[460px] overflow-hidden rounded-[2.5rem] border-0 bg-white shadow-2xl shadow-[#d9b28b]/25 md:max-w-3xl">
-        <CardHeader className="items-center gap-4 text-center">
-          <div className="mb-2 flex size-24 items-center justify-center justify-self-center rounded-[2rem] bg-[#bfe8d5] text-[#245643]">
-            <CheckCircle2 className="size-11" />
-          </div>
-          <CardTitle className="text-4xl font-black tracking-tight text-[#2d251f]">
-            Public case ready
-          </CardTitle>
-          <CardDescription className="max-w-xs justify-self-center text-center text-base font-medium leading-relaxed text-[#74675d]">
-            Your report is now live and ready to share.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button className="h-12 rounded-full bg-[#245643] px-7 text-white hover:bg-[#1d4737]" onClick={() => window.location.assign(`/public-case/${encodeURIComponent(petCase.id)}`)}>
-            View public case
-          </Button>
-          <Button className="h-12 rounded-full bg-[#2d251f] px-7 text-white hover:bg-[#46382f]" onClick={startOver}>
-            Start another report
-          </Button>
-        </CardFooter>
-      </Card>
-    );
   }
 
   return (
@@ -719,14 +675,6 @@ function removeEmptyMapPlaceFields(place: Partial<Address> & { coordinates: NonN
   ) as Partial<Address> & { coordinates: NonNullable<Address["coordinates"]> };
 }
 
-function rewriteToPublicCaseUrl(caseId: string) {
-  const casePath = `/public-case/${encodeURIComponent(caseId)}`;
-
-  if (window.location.pathname !== casePath) {
-    window.history.replaceState(null, "", casePath);
-  }
-}
-
 function rewriteToStepUrl(stepIndex: number) {
   const url = new URL(window.location.href);
 
@@ -805,11 +753,5 @@ function rewriteToCaseUrl(caseId: string) {
 
   if (window.location.pathname !== casePath) {
     window.history.replaceState(null, "", casePath);
-  }
-}
-
-function rewriteToHomeUrl() {
-  if (window.location.pathname !== "/") {
-    window.history.replaceState(null, "", "/");
   }
 }

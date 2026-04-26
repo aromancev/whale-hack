@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { IntakePage } from "@/app/page";
+import { OwnerCasePage } from "@/components/owner-case-page";
 import { petCaseRepository } from "@/domain/case-repository";
 
 export default async function CasePage({
@@ -18,7 +19,11 @@ export default async function CasePage({
     notFound();
   }
 
-  return <IntakePage initialCase={petCase} initialStep={parseStepParam(step)} />;
+  if (petCase.status === "created") {
+    return <IntakePage initialCase={petCase} initialStep={parseStepParam(step)} />;
+  }
+
+  return <OwnerCasePage initialCase={petCase} />;
 }
 
 function parseStepParam(value?: string | string[]) {
